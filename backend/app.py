@@ -16,11 +16,13 @@ from typing import Annotated, Any, Optional
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Header, WebSocket, WebSocketDisconnect, status
+from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 
 from backend import session  # noqa: E402
+from backend import assistant_voice, stt  # noqa: E402
 
 logger = logging.getLogger("tripwire")
 
@@ -232,6 +234,15 @@ async def join_session(session_id: str, body: dict, x_session_token: Optional[st
 @app.post("/api/sessions/{session_id}/transcripts")
 async def post_transcript(session_id: str, body: dict, x_session_token: Optional[str] = Header(None, alias="X-Session-Token")):
     _auth_or_raise(session_id, x_session_token, {"caller", "wearer", "family", "presenter"})
+    return await ingest_utterance(session_id, {k: body[k] for k in ("utterance_id", "speaker", "text", "timestamp")})
+
+
+MAX_ASSISTANT_REPLIES = 2
+
+
+async def ingest_utterance(session_id: str, body: dict) -> dict:
+    """Store + publish one finalized utterance, run risk analysis, trigger takeover / AI reply.
+    Shared by POST /transcripts and the live STT relay."""
     s = _session_or_raise(session_id)
     if s.state == session.SessionState.ended:
         raise HTTPException(status_code=410, detail="session ended")
@@ -252,6 +263,12 @@ async def post_transcript(session_id: str, body: dict, x_session_token: Optional
         "timestamp": body["timestamp"],
     }
     await session.publish_event(session_id, "transcript.final", utterance)
+
+    if s.state == session.SessionState.assistant_active and body["speaker"] == "caller":
+        n = getattr(s, "assistant_replies", 0)
+        if n < MAX_ASSISTANT_REPLIES:
+            s.assistant_replies = n + 1
+            asyncio.create_task(_assistant_reply(session_id, body["text"]))
 
     if not s.protection_enabled or s.state != session.SessionState.monitoring:
         return {"accepted": True, "duplicate": False}
@@ -398,6 +415,50 @@ async def family_joined(session_id: str, body: dict, x_session_token: Optional[s
 async def reconnect_wearer(session_id: str, body: dict, x_session_token: Optional[str] = Header(None, alias="X-Session-Token")):
     _auth_or_raise(session_id, x_session_token, {"family", "wearer", "presenter"})
     return await _bridge_or_501().reconnect_wearer(session_id, x_session_token)
+
+
+# ── Assistant voice + live transcription ────────────────────────────────
+
+async def _assistant_reply(session_id: str, caller_text: str) -> None:
+    from backend.intelligence.intervention import ASSISTANT_FALLBACK, assistant_reply, is_safe_reply
+    try:
+        text = await assistant_reply(caller_text)
+    except Exception:
+        text = ASSISTANT_FALLBACK
+    if not is_safe_reply(text):
+        text = ASSISTANT_FALLBACK
+    if session.get_session(session_id).state == session.SessionState.assistant_active:
+        await assistant_voice.speak(session_id, text)
+
+
+async def _on_event(envelope: dict) -> None:
+    if envelope["type"] == "takeover.active":
+        from backend.intelligence.intervention import ASSISTANT_OPENING
+        await assistant_voice.speak(envelope["session_id"], ASSISTANT_OPENING)
+
+
+session.listeners[:] = [f for f in session.listeners if getattr(f, "__name__", "") != "_on_event"] + [_on_event]  # idempotent on reload
+
+
+@app.get("/api/sessions/{session_id}/assistant-audio/{utterance_id}")
+def assistant_audio(session_id: str, utterance_id: str, token: Optional[str] = None):
+    _auth_or_raise(session_id, token, {"caller", "wearer", "family", "presenter"})
+    audio = assistant_voice.get_cached_audio(utterance_id)
+    if audio is None:
+        raise HTTPException(status_code=404, detail="audio not found")
+    return Response(content=audio, media_type="audio/mpeg")
+
+
+@app.websocket("/ws/sessions/{session_id}/stt")
+async def stt_ws(websocket: WebSocket, session_id: str, token: str = "", role: str = ""):
+    tok_role = _role_for(session_id, token) if token else None
+    s = session.store._sessions.get(session_id)
+    speaker = role if tok_role == "presenter" else tok_role
+    if s is None or tok_role is None or s.state == session.SessionState.ended or speaker not in {"caller", "wearer", "family", "ambient"} or (role and role != speaker):
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+    await websocket.accept()
+    await stt.run_stt_ws(websocket, session_id, speaker, ingest_utterance)
 
 
 @app.post("/api/sessions/{session_id}/end")

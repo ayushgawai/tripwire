@@ -19,6 +19,8 @@ export interface CallPanelProps {
   evidenceQuotes?: string[];
   alertSummary?: string | null;
   forceFixture?: boolean;
+  /** Called after the user joins the call (a user gesture), e.g. to start live captions. */
+  onJoined?: () => void;
 }
 
 export function CallPanel({
@@ -30,6 +32,7 @@ export function CallPanel({
   evidenceQuotes,
   alertSummary,
   forceFixture,
+  onJoined,
 }: CallPanelProps) {
   const { view, join, endCall, reconnectWearer, connecting } = useCallSession({
     sessionId,
@@ -47,7 +50,7 @@ export function CallPanel({
       alertSummary={alertSummary}
       joining={Boolean(connecting)}
       onJoin={() => {
-        void join();
+        void join().then(() => onJoined?.());
       }}
       onEndCall={() => {
         void endCall();

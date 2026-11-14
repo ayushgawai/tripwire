@@ -23,7 +23,8 @@ export type EventType =
   | "family.joined"
   | "session.ended"
   | "error"
-  | "wearer.reconnected";
+  | "wearer.reconnected"
+  | "assistant.spoke";
 
 export interface EventEnvelope<P = Record<string, unknown>> {
   event_id: string;
@@ -90,6 +91,7 @@ export interface SessionView {
   lastSequence: number;
   seenEventIds: string[];
   log: EventEnvelope[];
+  lastAssistantUtterance: { utterance_id: string; text: string; audio_url: string | undefined } | null;
 }
 
 export interface JoinCredentials {

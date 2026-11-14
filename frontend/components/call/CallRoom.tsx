@@ -17,10 +17,6 @@ export interface CallRoomProps {
   onReconnectWearer?: () => void;
 }
 
-/**
- * Reusable call shell for caller / wearer / family pages (Dev imports this).
- * Role-gated: caller never sees wearer-only warnings or private evidence.
- */
 export function CallRoom({
   view,
   evidenceQuotes,
@@ -30,7 +26,6 @@ export function CallRoom({
   onEndCall,
   onReconnectWearer,
 }: CallRoomProps) {
-  // Contract: family/presenter sends wearer_reconnect (X-Session-Token role check).
   const canReconnect =
     view.role === "family" &&
     view.familyJoined &&
@@ -41,12 +36,7 @@ export function CallRoom({
     <div
       data-testid="call-room"
       data-role={view.role}
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "1rem",
-        maxWidth: "40rem",
-      }}
+      className="flex flex-col gap-3 max-w-[40rem]"
     >
       <CallStatusBanner
         status={view.uiStatus}
@@ -90,9 +80,8 @@ export function CallRoom({
       ) : null}
 
       {view.role === "caller" ? (
-        <p>
-          Call status only. Wearer private warnings and evidence are not shown
-          here.
+        <p className="text-xs text-ink-faint italic">
+          Call status only. Wearer private warnings and evidence are not shown here.
         </p>
       ) : null}
     </div>

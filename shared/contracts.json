@@ -17,6 +17,7 @@
     "family.joined",
     "wearer.reconnected",
     "session.ended",
+    "assistant.spoke",
     "error"
   ],
   "speakers": [
@@ -166,6 +167,20 @@
         "ok": true
       },
       "auth": "none"
+    },
+    {
+      "method": "GET",
+      "path": "/api/sessions/{id}/assistant-audio/{utterance_id}",
+      "request": null,
+      "response": "audio/mpeg bytes",
+      "auth": "header: X-Session-Token"
+    },
+    {
+      "method": "WS",
+      "path": "/ws/sessions/{id}/stt?token=&role=",
+      "request": "binary audio chunks (audio/webm;codecs=opus)",
+      "response": "JSON messages: {type: interim|final|error}, forwards Deepgram audio",
+      "auth": "query: ?token=&role="
     },
     {
       "method": "WS",

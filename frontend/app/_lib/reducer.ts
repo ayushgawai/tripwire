@@ -35,6 +35,7 @@ export function emptyView(session_id = "", mode: SessionMode = "call"): SessionV
     lastSequence: 0,
     seenEventIds: [],
     log: [],
+    lastAssistantUtterance: null,
   };
 }
 
@@ -182,6 +183,15 @@ export function applyEvent(view: SessionView, ev: EventEnvelope): SessionView {
         errors: [...v.errors.slice(-19), { message: str(p.message, "Unknown error"), at }],
       };
       break;
+    case "assistant.spoke": {
+      const uid = str(p.utterance_id);
+      const txt = str(p.text);
+      const audio = p.audio_url;
+      if (uid && txt) {
+        v = { ...v, lastAssistantUtterance: { utterance_id: uid, text: txt, audio_url: typeof audio === "string" ? audio : undefined } };
+      }
+      break;
+    }
   }
 
   // If the backend includes an authoritative state on any event, trust it.

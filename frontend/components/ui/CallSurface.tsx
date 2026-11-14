@@ -5,8 +5,8 @@ import { useState } from "react";
 import type { JoinCredentials, Role, SessionState } from "@/app/_lib/types";
 import { CallPanel } from "@/components/call/CallPanel";
 import type { ProviderCredentials } from "@/components/call/types";
-import { Button } from "./Button";
-import { cn } from "./cn";
+import { Button } from "@/components/ui/Button";
+import { cn } from "@/components/ui/cn";
 
 function toProviderCredentials(
   role: Role,
@@ -65,7 +65,7 @@ export function CallSurface({
   // Full call panel when we have session identity + credentials (or can join).
   if (sessionId && accessToken && !replay) {
     return (
-      <div className={cn("rounded-2xl border border-line bg-paper/60 p-4", className)}>
+      <div className={cn("rounded-2xl border border-line bg-card shadow-sm", className)}>
         <CallPanel
           role={role}
           sessionId={sessionId}
@@ -75,13 +75,14 @@ export function CallSurface({
           }
           state={state}
           forceFixture={Boolean(creds?.fixture_mode)}
+          onJoined={() => void onJoin(role)}
         />
       </div>
     );
   }
 
   return (
-    <div className={cn("rounded-2xl border border-dashed border-line bg-paper/60 p-4", className)}>
+    <div className={cn("rounded-2xl border border-dashed border-line bg-paper/60 p-5", className)}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-ink">
@@ -92,7 +93,7 @@ export function CallSurface({
               : "Browser call"}
           </p>
           {!compact && (
-            <p className="truncate text-xs text-ink-faint">
+            <p className="mt-0.5 truncate text-xs text-ink-faint">
               {creds
                 ? replay
                   ? "Demo replay does not connect audio."
@@ -102,7 +103,7 @@ export function CallSurface({
           )}
         </div>
         {!creds && !ended && !controlled && (
-          <Button variant="outline" onClick={join} loading={joining}>
+          <Button variant="outline" size="lg" onClick={join} loading={joining}>
             Join as {role}
           </Button>
         )}

@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@/components/ui/Button";
+
 export interface CallControlsProps {
   role: "caller" | "wearer" | "family";
   connected: boolean;
@@ -25,31 +27,39 @@ export function CallControls({
     <div
       role="group"
       aria-label="Call controls"
-      style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}
+      className="flex flex-wrap items-center gap-3"
     >
       {!connected ? (
-        <button
-          type="button"
+        <Button
+          variant="primary"
+          size="xl"
           onClick={onJoin}
           disabled={joining}
           aria-label={`Join call as ${role}`}
+          className="min-w-[10rem]"
         >
           {joining ? "Joining…" : "Join call"}
-        </button>
+        </Button>
       ) : null}
       {canEnd ? (
-        <button type="button" onClick={onEndCall} aria-label="End call">
+        <Button
+          variant="outline"
+          size="lg"
+          onClick={onEndCall}
+          aria-label="End call"
+        >
           End Call
-        </button>
+        </Button>
       ) : null}
       {canReconnectWearer ? (
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="md"
           onClick={onReconnectWearer}
           aria-label="Explicitly reconnect wearer audio"
         >
           Reconnect Wearer
-        </button>
+        </Button>
       ) : null}
     </div>
   );

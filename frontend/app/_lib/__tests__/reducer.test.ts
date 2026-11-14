@@ -121,3 +121,21 @@ test("payload.demo_replay marks the view as demo replay", () => {
   const demo = applyEvent(live, { event_id: "b", session_id: "s1", sequence: 2, type: "transcript.final", timestamp: "", payload: { utterance_id: "u2", speaker: "caller", text: "hi", demo_replay: true } });
   assert.equal(demo.demoReplay, true);
 });
+
+test("assistant.spoke stores lastAssistantUtterance with text and audio_url", () => {
+  let v = emptyView("s1");
+  v = applyEvent(v, { event_id: "a", session_id: "s1", sequence: 1, type: "assistant.spoke", timestamp: "", payload: { utterance_id: "ut1", text: "This is the AI", audio_url: "/audio/ut1.mp3" } });
+  assert.ok(v.lastAssistantUtterance);
+  assert.equal(v.lastAssistantUtterance!.utterance_id, "ut1");
+  assert.equal(v.lastAssistantUtterance!.text, "This is the AI");
+  assert.equal(v.lastAssistantUtterance!.audio_url, "/audio/ut1.mp3");
+
+  // Overwrite with newer utterance
+  v = applyEvent(v, { event_id: "b", session_id: "s1", sequence: 2, type: "assistant.spoke", timestamp: "", payload: { utterance_id: "ut2", text: "Now I say more", audio_url: null } });
+  assert.equal(v.lastAssistantUtterance!.utterance_id, "ut2");
+  assert.equal(v.lastAssistantUtterance!.text, "Now I say more");
+  assert.equal(v.lastAssistantUtterance!.audio_url, undefined);
+
+  // assistant.spoke does not add to transcript
+  assert.equal(v.transcript.length, 0);
+});

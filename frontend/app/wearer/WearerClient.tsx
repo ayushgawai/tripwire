@@ -1,7 +1,9 @@
 "use client";
-import { useState } from "react";
+// The wearer sees a calm, plain-language scene. During protection, never the caller's words.
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useSession, useSessionParams } from "@/app/_lib/useSession";
+import { useLiveTranscription } from "@/app/_lib/useLiveTranscription";
 import { Button } from "@/components/ui/Button";
 import { CallSurface } from "@/components/ui/CallSurface";
 import { cn } from "@/components/ui/cn";
@@ -11,7 +13,7 @@ import { Logo } from "@/components/ui/Logo";
 import { NoSession } from "@/components/ui/NoSession";
 import { Pulse } from "@/components/ui/Pulse";
 import { ReplayRibbon } from "@/components/ui/ReplayRibbon";
-import type { SessionView } from "@/app/_lib/types";
+import type { JoinCredentials, Role, SessionView } from "@/app/_lib/types";
 
 type Scene = {
   key: string;
@@ -75,11 +77,36 @@ export default function WearerClient() {
   const { view, status, lastError, actions } = useSession(params);
   const [confirmEnd, setConfirmEnd] = useState(false);
   const familyName = useFamilyName();
+  const tokenFromUrl = params.token;
 
   if (!params.sessionId) return <NoSession role="wearer" />;
   const scene = sceneFor(view, familyName);
   const protectedMode = view.state === "protecting" || view.state === "assistant_active" || (view.state === "family_joined" && !view.wearerReconnected);
   const callerMuted = view.takeover === "active" && protectedMode;
+  // wearer_connected is false from protecting onward until family sends wearer_reconnect
+  const wearerConnected = view.wearerReconnected || view.state === "monitoring";
+  const ended = view.state === "ended";
+
+  // ---- Live transcription ----
+  const transcription = useLiveTranscription({
+    sessionId: params.sessionId,
+    token: tokenFromUrl,
+    role: "wearer",
+    enabled: !ended && !params.replay,
+  });
+
+  // Pause audio capture when wearer is disconnected (during protection / before reconnect)
+  useEffect(() => {
+    if (wearerConnected) return;
+    transcription.stop();
+  }, [wearerConnected, transcription.stop]);
+
+  // Wrap onJoin to also start transcription after the user's join gesture
+  const handleJoin = useCallback(async (role: Role): Promise<JoinCredentials | null> => {
+    const result = await actions.join(role);
+    if (result && wearerConnected) transcription.start();
+    return result;
+  }, [actions.join, wearerConnected, transcription.start]);
 
   return (
     <div className={cn("min-h-screen transition-colors duration-700", scene.bg)}>
@@ -98,9 +125,12 @@ export default function WearerClient() {
           </div>
         </div>
 
-        {/* Audio status — reflects backend-confirmed takeover only. */}
+        {/* Audio status */}
         <div className="mt-10 flex flex-wrap justify-center gap-3">
           <StatusChip on={!callerMuted} tone={callerMuted ? "danger" : "safe"} label={callerMuted ? "Caller audio paused" : "Caller audio on"} />
+          {!wearerConnected && !ended && (
+            <StatusChip on={false} tone="danger" label="Your microphone is paused while family verifies" />
+          )}
           {view.alert && (
             <StatusChip on tone="family" label={view.familyJoined ? `${cap(familyName)} joined` : `${cap(familyName)} alerted`} />
           )}
@@ -111,14 +141,17 @@ export default function WearerClient() {
           <CallSurface
             role="wearer"
             state={view.state}
-            onJoin={actions.join}
+            onJoin={handleJoin}
             replay={params.replay}
             sessionId={params.sessionId}
             accessToken={params.token}
           />
         </div>
 
-        {view.state !== "ended" && (
+        {/* Live captions strip */}
+        {!ended && <LiveCaptionsStrip transcription={transcription} wearerConnected={wearerConnected} />}
+
+        {!ended && (
           <div className="mt-8">
             {confirmEnd || scene.key === "failed" ? (
               <div className="flex flex-col items-center gap-3">
@@ -156,3 +189,32 @@ function useFamilyName() {
 }
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+// ---- Live captions strip ----
+
+function LiveCaptionsStrip({ transcription, wearerConnected }: { transcription: ReturnType<typeof useLiveTranscription>; wearerConnected: boolean }) {
+  const { status, interim, lastFinal, error, start, stop } = transcription;
+  const live = status === "live";
+
+  return (
+    <div className="w-full rounded-xl border border-line bg-card/80 p-3 text-left">
+      <div className="flex items-center gap-2">
+        <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", live ? "bg-safe animate-pulse" : status === "error" ? "bg-danger" : "bg-ink-faint")} />
+        <span className="text-xs font-semibold uppercase tracking-wider text-ink-soft">Live captions</span>
+        <span className="ml-auto text-[10px] text-ink-faint capitalize">{status}</span>
+        {live ? (
+          <Button size="sm" variant="outline" onClick={stop}>Stop</Button>
+        ) : (
+          <Button size="sm" onClick={start} disabled={status === "starting" || !wearerConnected}>Start</Button>
+        )}
+      </div>
+      {!wearerConnected && status !== "idle" && (
+        <p className="mt-2 text-xs text-watch">Your microphone is paused while family verifies</p>
+      )}
+      {error && <p className="mt-2 text-xs text-danger">{error}</p>}
+      {lastFinal && <p className="mt-2 text-sm text-ink">{lastFinal}</p>}
+      {interim && <p className="mt-1 text-sm text-ink-faint italic">{interim}</p>}
+      {!lastFinal && !interim && !error && <p className="mt-2 text-xs text-ink-faint">Press Start to begin live captions.</p>}
+    </div>
+  );
+}

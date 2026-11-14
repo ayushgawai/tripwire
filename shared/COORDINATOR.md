@@ -11,7 +11,7 @@ Ask Ayush before changing anything here.
 ```
 `sequence` starts at 1 per session and increases by 1 per event. Timestamps are UTC ISO with `Z`.
 Event types: `transcript.final, risk.updated, takeover.started, takeover.active, takeover.failed,
-family.alert, family.joined, wearer.reconnected, session.ended, error`.
+family.alert, family.joined, wearer.reconnected, session.ended, assistant.spoke, error`.
 
 ## States
 `monitoring -> protecting -> assistant_active -> family_joined -> ended`

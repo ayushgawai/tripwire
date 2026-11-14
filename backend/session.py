@@ -184,6 +184,8 @@ class SessionStore:
                 session.subscribers.remove(q)
             except ValueError:
                 pass
+        for fn in listeners:
+            asyncio.create_task(_safe_listener(fn, envelope))
         return envelope
 
     async def end(self, session_id: str) -> None:
@@ -205,6 +207,18 @@ class SessionStore:
                 q.put_nowait(None)
             except asyncio.QueueFull:
                 pass
+
+
+# Async callables run after every publish with the envelope (registered by app.py).
+listeners: list = []
+
+
+async def _safe_listener(fn, envelope: dict) -> None:
+    try:
+        await fn(envelope)
+    except Exception:  # a listener must never break publishing
+        import logging
+        logging.getLogger("tripwire").exception("event listener failed")
 
 
 store = SessionStore()
