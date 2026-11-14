@@ -296,11 +296,7 @@ async def ingest_utterance(session_id: str, body: dict) -> dict:
         return {"accepted": True, "duplicate": False}
 
     session.record_decision(session_id, decision)
-    await session.publish_event(session_id, "risk.updated", {
-        "decision_id": decision.get("decision_id"),
-        "risk": decision.get("risk"),
-        "recommended_action": decision.get("recommended_action"),
-    })
+    await session.publish_event(session_id, "risk.updated", dict(decision))  # full risk_result
 
     risk = decision.get("risk", "")
     action = decision.get("recommended_action", "")

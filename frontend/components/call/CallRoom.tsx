@@ -2,7 +2,6 @@
 
 import { CallControls } from "./CallControls";
 import { CallStatusBanner } from "./CallStatusBanner";
-import { FamilyJoinPanel } from "./FamilyJoinPanel";
 import { ParticipantList } from "./ParticipantList";
 import { TakeoverStatus } from "./TakeoverStatus";
 import type { CallSessionView } from "./types";
@@ -36,7 +35,7 @@ export function CallRoom({
     <div
       data-testid="call-room"
       data-role={view.role}
-      className="flex flex-col gap-3 max-w-[40rem]"
+      className="flex w-full flex-col gap-3 p-4"
     >
       <CallStatusBanner
         status={view.uiStatus}
@@ -68,16 +67,6 @@ export function CallRoom({
         showWearerWarning={view.role === "wearer"}
       />
 
-      {view.role === "family" ? (
-        <FamilyJoinPanel
-          alertSummary={alertSummary}
-          evidenceQuotes={evidenceQuotes}
-          joining={joining}
-          joined={view.familyJoined}
-          familyInControl={view.familyJoined}
-          onJoin={onJoin}
-        />
-      ) : null}
 
       {view.role === "caller" ? (
         <p className="text-xs text-ink-faint italic">
