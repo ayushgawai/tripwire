@@ -215,7 +215,7 @@ export function useCallSession(args: UseCallSessionArgs) {
           familyJoinedSent.current = true;
           // Real provider join confirmation for Ayush mark_family_joined.
           // Host (app.py) should map this body to session.mark_family_joined + calls.stop_assistant.
-          await fetch(`${base}/api/sessions/${sessionId}/family-provider-joined`, {
+          await fetch(`${base}/api/sessions/${sessionId}/family-joined`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -224,10 +224,10 @@ export function useCallSession(args: UseCallSessionArgs) {
             body: JSON.stringify({
               role: "family",
               provider_participant_id: localId,
-              user_id: creds.user_id,
+              user_id_from_provider: creds.user_id,
             }),
           }).catch(() => {
-            /* 404 until Ayush mounts the route — see backend/calls/INTEGRATION.md */
+            /* ignore transient network errors; snapshot/WS recover state */
           });
         }
       }

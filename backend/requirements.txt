@@ -4,3 +4,5 @@ pydantic
 httpx
 python-dotenv
 pytest
+pytest-asyncio>=0.24,<1.0
+-r audio/requirements.txt

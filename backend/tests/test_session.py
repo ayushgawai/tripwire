@@ -54,7 +54,7 @@ def test_legal_monitoring_to_ended():
 
 def test_legal_protecting_to_active():
     s = _new_session("call", protection=True)
-    # starts in protecting
+    store.transition(s.session_id, SessionState.protecting)
     store.transition(s.session_id, SessionState.assistant_active)
     assert get_session(s.session_id).state == SessionState.assistant_active
 
@@ -67,6 +67,7 @@ def test_legal_protecting_to_ended():
 
 def test_legal_active_to_family_joined():
     s = _new_session("call", protection=True)
+    store.transition(s.session_id, SessionState.protecting)
     store.transition(s.session_id, SessionState.assistant_active)
     store.transition(s.session_id, SessionState.family_joined)
     assert get_session(s.session_id).state == SessionState.family_joined
@@ -74,6 +75,7 @@ def test_legal_active_to_family_joined():
 
 def test_legal_active_to_ended():
     s = _new_session("call", protection=True)
+    store.transition(s.session_id, SessionState.protecting)
     store.transition(s.session_id, SessionState.assistant_active)
     store.transition(s.session_id, SessionState.ended)
     assert get_session(s.session_id).state == SessionState.ended
@@ -101,7 +103,7 @@ def test_illegal_protecting_to_family_joined():
 
 def test_illegal_family_joined_to_active():
     s = _new_session("call", protection=True)
-    # starts in protecting
+    store.transition(s.session_id, SessionState.protecting)
     store.transition(s.session_id, SessionState.assistant_active)
     store.transition(s.session_id, SessionState.family_joined)
     try:
@@ -298,7 +300,7 @@ def test_late_signals_ignored_after_timeout():
 
 def test_mark_family_joined_returns_true():
     s = _new_session("call", protection=True)
-    # starts in protecting
+    store.transition(s.session_id, SessionState.protecting)
     store.transition(s.session_id, SessionState.assistant_active)
 
     async def flow():
@@ -312,7 +314,7 @@ def test_mark_family_joined_returns_true():
 
 def test_family_join_duplicate_is_noop():
     s = _new_session("call", protection=True)
-    # starts in protecting
+    store.transition(s.session_id, SessionState.protecting)
     store.transition(s.session_id, SessionState.assistant_active)
 
     async def flow():

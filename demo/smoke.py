@@ -89,11 +89,15 @@ def create_session(client, log):
         log.check("session response has session_id and presenter token", False, r.text[:200])
         return None, None
     log.check(f"create session {sid}", True)
+    TOKENS[sid] = token
     return sid, token
 
 
+TOKENS = {}
+
+
 def get_snapshot(client, sid, log, label):
-    r = client.get(f"/api/sessions/{sid}")
+    r = client.get(f"/api/sessions/{sid}", headers={"X-Session-Token": TOKENS.get(sid, "")})
     if r.status_code != 200:
         log.check(label, False, f"GET snapshot -> {r.status_code} {r.text[:120]}")
         return None
@@ -246,7 +250,7 @@ def scenario_scam(client, log):
                   f"alert.decision_id={(snap2.get('alert') or {}).get('decision_id')} state={snap2.get('state')}")
 
     end_session(client, sid, token, log, "scam")
-    r = client.get(f"/api/sessions/{sid}")
+    r = client.get(f"/api/sessions/{sid}", headers={"X-Session-Token": token})
     log.check("after end: GET snapshot -> 410", r.status_code == 410,
               f"got {r.status_code} {r.text[:120]}")
 

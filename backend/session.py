@@ -28,7 +28,7 @@ class SessionState(StrEnum):
 
 LEGAL_TRANSITIONS: dict[SessionState, set[SessionState]] = {
     SessionState.monitoring: {SessionState.protecting, SessionState.ended},
-    SessionState.protecting: {SessionState.assistant_active, SessionState.ended},
+    SessionState.protecting: {SessionState.assistant_active, SessionState.family_joined, SessionState.ended},
     SessionState.assistant_active: {SessionState.family_joined, SessionState.ended},
     SessionState.family_joined: {SessionState.ended},
 }
@@ -99,12 +99,11 @@ class SessionStore:
         session_id = f"ses_{secrets.token_hex(6)}"
         roles = ("caller", "wearer", "family", "presenter")
         tokens = {role: secrets.token_urlsafe(16) for role in roles}
-        initial = SessionState.protecting if protection_enabled else SessionState.monitoring
         session = Session(
             session_id=session_id,
             mode=mode,
             protection_enabled=protection_enabled,
-            state=initial,
+            state=SessionState.monitoring,
             wearer_connected=True,
             tokens=tokens,
         )
