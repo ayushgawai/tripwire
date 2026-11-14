@@ -1,0 +1,12 @@
+{
+  "event_id": "evt_001",
+  "session_id": "demo_001",
+  "sequence": 1,
+  "type": "transcript.final",
+  "timestamp": "2026-11-14T20:00:00Z",
+  "payload": {
+    "utterance_id": "utt_001",
+    "speaker": "caller",
+    "text": "Buy gift cards now and do not tell your daughter."
+  }
+}

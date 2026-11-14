@@ -1,0 +1,178 @@
+{
+  "event_envelope": {
+    "event_id": "evt_<uuid hex>",
+    "session_id": "string",
+    "sequence": 1,
+    "type": "transcript.final",
+    "timestamp": "2026-11-14T20:00:00Z",
+    "payload": {}
+  },
+  "event_types": [
+    "transcript.final",
+    "risk.updated",
+    "takeover.started",
+    "takeover.active",
+    "takeover.failed",
+    "family.alert",
+    "family.joined",
+    "wearer.reconnected",
+    "session.ended",
+    "error"
+  ],
+  "speakers": [
+    "caller",
+    "wearer",
+    "family",
+    "assistant",
+    "ambient"
+  ],
+  "states": [
+    "monitoring",
+    "protecting",
+    "assistant_active",
+    "family_joined",
+    "ended"
+  ],
+  "legal_transitions": {
+    "monitoring": ["protecting", "ended"],
+    "protecting": ["assistant_active", "ended"],
+    "assistant_active": ["family_joined", "ended"],
+    "family_joined": ["ended"]
+  },
+  "risk_result": {
+    "decision_id": "decision_<uuid hex>",
+    "risk": "low",
+    "reasons": ["gift_card_request", "urgency", "secrecy", "impersonation", "threat", "financial_pressure"],
+    "evidence": [
+      {
+        "utterance_id": "utt_001",
+        "quote": "Buy gift cards now and do not tell your daughter."
+      }
+    ],
+    "summary": "The caller demands gift cards urgently and discourages family verification.",
+    "recommended_action": "none"
+  },
+  "utterance": {
+    "utterance_id": "utt_001",
+    "speaker": "caller",
+    "text": "string",
+    "timestamp": "2026-11-14T20:00:00Z"
+  },
+  "session_snapshot": {
+    "session_id": "demo_001",
+    "mode": "call",
+    "protection_enabled": true,
+    "state": "monitoring",
+    "wearer_connected": true,
+    "transcript": [],
+    "latest_decision": null,
+    "alert": null,
+    "last_sequence": 0,
+    "takeover": {
+      "status": "idle",
+      "wearer_audio_blocked": false,
+      "assistant_ready": false
+    }
+  },
+  "endpoints": [
+    {
+      "method": "POST",
+      "path": "/api/sessions",
+      "request": {
+        "mode": "call",
+        "protection_enabled": true
+      },
+      "response": {
+        "session_id": "demo_001",
+        "state": "monitoring",
+        "tokens": {
+          "caller": "<token_urlsafe>",
+          "wearer": "<token_urlsafe>",
+          "family": "<token_urlsafe>",
+          "presenter": "<token_urlsafe>"
+        }
+      },
+      "auth": "none"
+    },
+    {
+      "method": "GET",
+      "path": "/api/sessions/{id}",
+      "request": null,
+      "response": "session_snapshot",
+      "auth": "header: X-Session-Token"
+    },
+    {
+      "method": "POST",
+      "path": "/api/sessions/{id}/join",
+      "request": {
+        "role": "caller"
+      },
+      "response": {
+        "result": "calls.create_join_credentials(session_id, role) result"
+      },
+      "auth": "header: X-Session-Token"
+    },
+    {
+      "method": "POST",
+      "path": "/api/sessions/{id}/transcripts",
+      "request": {
+        "utterance_id": "utt_001",
+        "speaker": "caller",
+        "text": "Buy gift cards now and do not tell your daughter.",
+        "timestamp": "2026-11-14T20:00:00Z"
+      },
+      "response": {
+        "accepted": true,
+        "duplicate": false
+      },
+      "auth": "header: X-Session-Token"
+    },
+    {
+      "method": "POST",
+      "path": "/api/sessions/{id}/takeover",
+      "request": {
+        "decision_id": "decision_001"
+      },
+      "response": {
+        "accepted": true
+      },
+      "auth": "header: X-Session-Token"
+    },
+    {
+      "method": "POST",
+      "path": "/api/sessions/{id}/signals",
+      "request": {
+        "signal": "wearer_audio_blocked"
+      },
+      "response": {
+        "accepted": true
+      },
+      "auth": "header: X-Session-Token"
+    },
+    {
+      "method": "POST",
+      "path": "/api/sessions/{id}/end",
+      "request": {},
+      "response": {
+        "accepted": true
+      },
+      "auth": "header: X-Session-Token"
+    },
+    {
+      "method": "GET",
+      "path": "/api/health",
+      "request": null,
+      "response": {
+        "ok": true
+      },
+      "auth": "none"
+    },
+    {
+      "method": "WS",
+      "path": "/ws/sessions/{id}",
+      "request": null,
+      "response": "event envelopes pushed as JSON",
+      "auth": "query: ?token="
+    }
+  ]
+}

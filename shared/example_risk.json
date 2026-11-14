@@ -1,0 +1,13 @@
+{
+  "decision_id": "decision_001",
+  "risk": "high",
+  "reasons": ["gift_card_request", "urgency", "secrecy"],
+  "evidence": [
+    {
+      "utterance_id": "utt_001",
+      "quote": "Buy gift cards now and do not tell your daughter."
+    }
+  ],
+  "summary": "The caller demands gift cards urgently and discourages family verification.",
+  "recommended_action": "takeover"
+}
