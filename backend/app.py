@@ -47,8 +47,15 @@ def _load_intelligence() -> Any | None:
 
 def _load_calls() -> Any | None:
     required = ("create_join_credentials", "start_takeover", "stop_assistant", "end_call")
-    # Prefer calls_bridge: it maps Manav's CallSessionManager onto coordinator session tokens.
-    # backend.calls may also export the four functions, but those use invite HMAC by default.
+    mod = sys.modules.get("backend.calls")
+    # Test doubles replace backend.calls with a non-package object that implements the contract.
+    if (
+        mod is not None
+        and not hasattr(mod, "__path__")
+        and all(hasattr(mod, f) for f in required)
+    ):
+        return mod
+    # Production: prefer calls_bridge (session-token aware) over invite-HMAC coordinator_api.
     try:
         from backend import calls_bridge
 
@@ -56,9 +63,8 @@ def _load_calls() -> Any | None:
             return calls_bridge
     except ImportError:
         pass
-    mod = sys.modules.get("backend.calls")
     if mod is not None and all(hasattr(mod, f) for f in required):
-        return mod  # tests may inject fakes into backend.calls
+        return mod
     return _demo_calls_or_none()
 
 

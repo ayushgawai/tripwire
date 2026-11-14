@@ -80,16 +80,21 @@ async def create_join_credentials(session_id: str, role: str) -> dict:
 
 
 async def start_takeover(session_id: str, decision: dict) -> dict:
+    """Ayush already published takeover.started and entered protecting.
+
+    Sync Manav's call snapshot, start the voice worker, then notify
+    mark_assistant_ready. Wearer routing confirmation arrives separately via
+    POST /signals {wearer_audio_blocked}.
+    """
     await _attach(session_id)
     manager.enable_family_join_credentials(session_id)
-    result = await manager.start_takeover(
-        session_id,
-        decision_id=decision.get("decision_id", ""),
-        risk=decision.get("risk", ""),
-        recommended_action=decision.get("recommended_action", ""),
+    await manager.prepare_coordinator_takeover(
+        session_id, decision_id=str(decision.get("decision_id", ""))
     )
     await manager.start_voice_worker(session_id)
-    return result
+    # Coordinator owns takeover.active gating (routing signal + assistant ready).
+    await session.mark_assistant_ready(session_id)
+    return {"accepted": True, "worker_ready": True}
 
 
 async def stop_assistant(session_id: str) -> None:
