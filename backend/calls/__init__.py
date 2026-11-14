@@ -12,11 +12,13 @@ from .models import (
     SessionState,
 )
 from .provider_interface import CallProvider, VoiceWorker
+from .session_manager import CallSessionManager
 from .state_machine import CallStateMachine
 
 __all__ = [
     "CallError",
     "CallProvider",
+    "CallSessionManager",
     "CallSessionSnapshot",
     "CallStateMachine",
     "IllegalTransitionError",
