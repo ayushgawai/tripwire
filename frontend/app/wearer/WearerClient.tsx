@@ -108,7 +108,14 @@ export default function WearerClient() {
         </div>
 
         <div className="mt-10 w-full max-w-xl">
-          <CallSurface role="wearer" state={view.state} onJoin={actions.join} replay={params.replay} />
+          <CallSurface
+            role="wearer"
+            state={view.state}
+            onJoin={actions.join}
+            replay={params.replay}
+            sessionId={params.sessionId}
+            accessToken={params.token}
+          />
         </div>
 
         {view.state !== "ended" && (

@@ -105,8 +105,14 @@ class PipecatVoiceWorker(VoiceWorker):
                 DailyParams(audio_in_enabled=True, audio_out_enabled=True),
             )
             _ = transport, opening_line
-            self._ready = True
-            await self._stop_event.wait()
+            # Do not claim ready from construction alone. Full PipelineWorker +
+            # DailyTransport join/readiness wiring is required for live mode.
+            # Until that lands, fail loudly so callers use VOICE_WORKER=mock.
+            raise VoiceWorkerError(
+                "Pipecat DailyTransport constructed but live PipelineWorker join "
+                "is not fully wired. Set VOICE_WORKER=mock for Local Fixture mode.",
+                code="voice_worker_not_fully_wired",
+            )
         except Exception as exc:  # noqa: BLE001 — surface as worker error
             self._ready = False
             self._running = False

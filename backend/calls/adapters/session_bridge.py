@@ -1,13 +1,10 @@
 """Integration adapters for Ayush's session coordinator.
 
-BLOCKER FOR AYUSH: wire `CallSessionManager` into `backend/session.py` by:
-1. Calling `manager.create_call_resources(session_id)` after POST /api/sessions
-2. Delegating POST /api/sessions/{id}/join credentials to `manager.join(...)`
-3. Forwarding high-risk takeover to `manager.start_takeover(...)`
-4. Passing `publish_event` from the WebSocket fan-out into `InMemoryEventPublisher`
-   or replacing it with the real publisher that writes event_id/sequence.
+Prefer the coordinator exports in `backend.calls` (see shared/COORDINATOR.md):
+  create_join_credentials, start_takeover, stop_assistant, end_call,
+  on_family_provider_joined.
 
-Until that wiring exists, tests and fixture mode use these in-memory adapters.
+Standalone tests still use InMemoryEventPublisher + InviteAccessValidator.
 """
 
 from __future__ import annotations

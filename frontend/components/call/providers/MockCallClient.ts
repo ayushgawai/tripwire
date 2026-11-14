@@ -43,6 +43,8 @@ export class MockCallClient implements CallProviderClient {
     if (credentials.role !== "wearer") {
       this._addRemote("mock_wearer", "wearer", "wearer_fixture");
     }
+    // Emit local join so family/wearer confirmation paths can run (Daily does this too).
+    for (const h of this.joinHandlers) h(local);
   }
 
   private _addRemote(

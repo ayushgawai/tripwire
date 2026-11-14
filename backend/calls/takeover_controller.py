@@ -94,6 +94,10 @@ class TakeoverController:
         self._m._machine(session_id).assert_not_ended()
         if confirmation.session_id != session_id:
             raise RoutingConfirmationError("Routing confirmation session mismatch")
+        if snap.last_error:
+            raise RoutingConfirmationError(
+                f"Takeover already failed ({snap.last_error}); refusing routing confirmation"
+            )
         if snap.state != SessionState.PROTECTING:
             raise RoutingConfirmationError(
                 f"Routing confirmation only valid in protecting (got {snap.state.value})"
@@ -161,11 +165,34 @@ class TakeoverController:
         )
         return await self._maybe_activate(session_id)
 
+    async def confirm_worker_ready_standalone(self, session_id: str) -> dict[str, Any]:
+        """When Ayush session hooks are unavailable (fixture), mark worker ready locally."""
+        snap = self._m._get(session_id)
+        if snap.last_error:
+            return {"accepted": False, "reason": "takeover_already_failed"}
+        snap.worker_ready = True
+        snap.updated_at = utc_now_iso()
+        return await self._maybe_activate(session_id)
+
     async def _maybe_activate(self, session_id: str) -> dict[str, Any]:
         snap = self._m._get(session_id)
         if snap.state != SessionState.PROTECTING:
             return {"accepted": True, "state": snap.state.value, "activated": False}
-        if not (snap.routing_confirmed and snap.worker_ready):
+        if snap.last_error:
+            return {
+                "accepted": False,
+                "state": snap.state.value,
+                "activated": False,
+                "reason": "takeover_already_failed",
+            }
+        worker = self._m._workers.get(session_id)
+        worker_ok = (
+            snap.worker_ready
+            and worker is not None
+            and worker.is_running()
+            and worker.is_ready()
+        )
+        if not (snap.routing_confirmed and worker_ok):
             return {
                 "accepted": True,
                 "state": snap.state.value,
@@ -174,7 +201,7 @@ class TakeoverController:
                     name
                     for name, ok in (
                         ("routing_confirmation", snap.routing_confirmed),
-                        ("worker_ready", snap.worker_ready),
+                        ("worker_ready", worker_ok),
                     )
                     if not ok
                 ],
@@ -215,6 +242,9 @@ class TakeoverController:
     ) -> dict[str, Any]:
         snap = self._m._get(session_id)
         snap.last_error = reason
+        # Clear gates so a later confirmation cannot publish takeover.active.
+        snap.worker_ready = False
+        snap.routing_confirmed = False
         snap.updated_at = utc_now_iso()
         worker = self._m._workers.pop(session_id, None)
         if worker is not None and worker.is_running():

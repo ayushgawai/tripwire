@@ -1,6 +1,7 @@
 /** Manav call UI — import from `frontend/components/call` (Dev pages). */
 
 export { CallRoom } from "./CallRoom";
+export { CallPanel } from "./CallPanel";
 export { CallControls } from "./CallControls";
 export { CallStatusBanner } from "./CallStatusBanner";
 export { ParticipantList } from "./ParticipantList";

@@ -30,8 +30,9 @@ export function CallRoom({
   onEndCall,
   onReconnectWearer,
 }: CallRoomProps) {
+  // Contract: family/presenter sends wearer_reconnect; wearer UI shows status.
   const canReconnect =
-    view.role === "wearer" &&
+    (view.role === "family" || view.role === "wearer") &&
     view.familyJoined &&
     view.wearerProtected &&
     !view.wearerReconnected;

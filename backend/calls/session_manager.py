@@ -255,3 +255,56 @@ class CallSessionManager:
         snap = self._get(session_id)
         snap.family_alert_sent = True
         snap.updated_at = utc_now_iso()
+
+    async def issue_coordinator_credentials(
+        self, session_id: str, *, role: ParticipantRole
+    ) -> dict[str, Any]:
+        """Ayush-authorized join: mint provider creds without Manav invite HMAC."""
+        snap = self._get(session_id)
+        self._machine(session_id).assert_not_ended()
+        assert snap.provider_room_name and snap.provider_room_url
+        # Stable user_id for Daily (max 36) bound to session+role.
+        sid_part = session_id.replace("-", "").replace("_", "")[:12]
+        user_id = f"{role.value[:6]}_{sid_part}"[:36]
+        creds = await self.provider.create_meeting_token(
+            session_id=session_id,
+            room_name=snap.provider_room_name,
+            role=role,
+            user_id=user_id,
+            ttl_seconds=self._ttl,
+        )
+        record = snap.participants.get(role.value)
+        if record is None:
+            snap.participants[role.value] = ParticipantRecord(
+                role=role, user_id=user_id
+            )
+        else:
+            record.user_id = user_id
+        snap.updated_at = utc_now_iso()
+        return creds.public_dict()
+
+    async def prepare_coordinator_takeover(
+        self, session_id: str, *, decision_id: str
+    ) -> None:
+        """Sync local call snapshot after Ayush already entered protecting."""
+        snap = self._get(session_id)
+        machine = self._machine(session_id)
+        if snap.state == SessionState.MONITORING:
+            machine.transition(SessionState.PROTECTING, reason="coordinator_takeover")
+            snap.state = SessionState.PROTECTING
+        snap.takeover_decision_id = decision_id or snap.takeover_decision_id
+        snap.wearer_protected = True
+        snap.routing_confirmed = False
+        snap.worker_ready = False
+        snap.last_error = None
+        snap.family_alert_sent = True
+        snap.updated_at = utc_now_iso()
+
+    async def stop_voice_worker(self, session_id: str, *, reason: str = "") -> None:
+        worker = self._workers.pop(session_id, None)
+        if worker is not None and worker.is_running():
+            await worker.stop(reason=reason or "stopped")
+        snap = self._sessions.get(session_id)
+        if snap is not None:
+            snap.worker_ready = False
+            snap.updated_at = utc_now_iso()

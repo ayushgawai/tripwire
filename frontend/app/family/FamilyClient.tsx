@@ -190,7 +190,16 @@ export default function FamilyClient() {
             </Card>
 
             {(creds || view.familyJoined) && (
-              <CallSurface role="family" state={view.state} onJoin={actions.join} replay={params.replay} credentials={creds} compact />
+              <CallSurface
+                role="family"
+                state={view.state}
+                onJoin={actions.join}
+                replay={params.replay}
+                credentials={creds}
+                compact
+                sessionId={params.sessionId}
+                accessToken={params.token}
+              />
             )}
           </>
         )}

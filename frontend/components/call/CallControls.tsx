@@ -42,7 +42,7 @@ export function CallControls({
           End Call
         </button>
       ) : null}
-      {role === "wearer" && canReconnectWearer ? (
+      {canReconnectWearer ? (
         <button
           type="button"
           onClick={onReconnectWearer}

@@ -61,11 +61,11 @@ export function deriveUiStatus(input: {
   if (input.connecting) return "connecting";
   if (input.state === "ended") return "call_ended";
   if (input.state === "family_joined") return "family_joined";
-  if (input.state === "assistant_active") return "ai_assistant_active";
-  if (input.state === "protecting") return "protection_starting";
   if (input.familyAlertSent && input.state === "assistant_active") {
     return "family_alert_sent";
   }
+  if (input.state === "assistant_active") return "ai_assistant_active";
+  if (input.state === "protecting") return "protection_starting";
   if (!input.connected) return "connecting";
   if (input.fixtureMode && input.state === "monitoring") return "local_fixture";
   if (input.state === "monitoring") return "monitoring";
