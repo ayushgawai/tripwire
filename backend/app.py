@@ -9,6 +9,7 @@ event arrives.
 from __future__ import annotations
 
 import asyncio
+import uuid
 import logging
 import os
 import sys
@@ -411,6 +412,27 @@ async def family_joined(session_id: str, body: dict, x_session_token: Optional[s
 async def reconnect_wearer(session_id: str, body: dict, x_session_token: Optional[str] = Header(None, alias="X-Session-Token")):
     _auth_or_raise(session_id, x_session_token, {"family", "wearer", "presenter"})
     return await _bridge_or_501().reconnect_wearer(session_id, x_session_token)
+
+
+# ── Vexo band events (SOS double-tap, free-fall) ───────────────────────
+
+BAND_ALERTS = {
+    "sos": ("sos", "Your family member pressed their Vexo band for help."),
+    "fall": ("possible_fall", "The Vexo band detected a possible fall."),
+}
+
+
+@app.post("/api/sessions/{session_id}/band-event")
+async def band_event(session_id: str, body: dict, x_session_token: Optional[str] = Header(None, alias="X-Session-Token")):
+    _auth_or_raise(session_id, x_session_token, {"presenter", "wearer"})
+    kind = body.get("kind")
+    if kind not in BAND_ALERTS:
+        raise HTTPException(status_code=422, detail="kind must be sos or fall")
+    reason, summary = BAND_ALERTS[kind]
+    alert = {"decision_id": f"band_{kind}_{uuid.uuid4().hex[:8]}", "summary": summary, "reasons": [reason], "evidence": [], "source": "vexo_band"}
+    session.get_session(session_id).alert = alert
+    await session.publish_event(session_id, "family.alert", alert)
+    return {"accepted": True}
 
 
 # ── Assistant voice + live transcription ────────────────────────────────

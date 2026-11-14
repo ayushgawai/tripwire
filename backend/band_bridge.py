@@ -46,6 +46,7 @@ async def main() -> None:
     ap.add_argument("--session")
     ap.add_argument("--token", help="presenter token for --session")
     ap.add_argument("--mode", default="ambient", choices=["ambient", "call"])
+    ap.add_argument("--no-mic", action="store_true", help="LED + taps/fall only (audio comes from elsewhere)")
     a = ap.parse_args()
 
     http = httpx.AsyncClient(base_url=a.backend, timeout=20)
@@ -64,12 +65,23 @@ async def main() -> None:
     await band.set_led(GREEN, pattern="breathe", period=1500)   # armed
     await asyncio.sleep(1.5)
 
+    async def band_alert(kind: str) -> None:
+        await http.post(f"/api/sessions/{sid}/band-event", headers={"X-Session-Token": token}, json={"kind": kind})
+        print(f"BAND {kind.upper()}: family alerted")
+
+    band.on("double-tap", lambda e: asyncio.ensure_future(band_alert("sos")))
+    band.on("free-fall", lambda e: asyncio.ensure_future(band_alert("fall")))
+    await band.configure(events=True)
+
     audio_q: asyncio.Queue[bytes] = asyncio.Queue(maxsize=500)
     # Empty packets would tell Deepgram "end of stream", so drop them.
     band.on("audio", lambda m: audio_q.put_nowait(m.opus) if m.opus and not audio_q.full() else None)
-    mic_on = True
-    await band.configure(audio=True)                            # solid blue = listening
-    print("band mic on (solid blue). Listening...")
+    mic_on = not a.no_mic
+    if mic_on:
+        await band.configure(audio=True)                        # solid blue = listening
+        print("band mic on (solid blue). Listening...")
+    else:
+        print("band ready (no mic): LED alerts, double-tap = SOS, free-fall = fall alert. Listening...")
 
     async def post(text: str) -> None:
         await http.post(f"/api/sessions/{sid}/transcripts", headers={"X-Session-Token": token},
@@ -108,9 +120,10 @@ async def main() -> None:
         async with websockets.connect(ws_url) as ws:
             async for raw in ws:
                 t = json.loads(raw).get("type")
-                if t in ("takeover.started", "family.alert") and mic_on:
-                    mic_on = False
-                    await band.configure(audio=False)               # LED is locked while the mic is on
+                if t in ("takeover.started", "family.alert"):
+                    if mic_on:
+                        mic_on = False
+                        await band.configure(audio=False)           # LED is locked while the mic is on
                     await band.set_led(RED, pattern="blink", period=400)
                     print("RISK: band blinking red")
                 elif t == "family.joined":
@@ -120,7 +133,7 @@ async def main() -> None:
                     return
 
     try:
-        dg_task = asyncio.create_task(deepgram())
+        dg_task = asyncio.create_task(deepgram() if mic_on else asyncio.sleep(0))
         try:
             await events()      # returns on session.ended
         except websockets.ConnectionClosed:
