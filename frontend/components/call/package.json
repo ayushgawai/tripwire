@@ -1,0 +1,25 @@
+{
+  "name": "@tripwire/call-components",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Manav call transport UI — provider-neutral components for Dev pages",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "scripts": {
+    "test": "node --experimental-strip-types --test __tests__/*.test.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "optionalDependencies": {
+    "@daily-co/daily-js": "0.95.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "typescript": "^5.9.3"
+  }
+}
