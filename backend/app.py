@@ -46,15 +46,13 @@ def _load_intelligence() -> Any | None:
 
 
 def _load_calls() -> Any | None:
+    required = ("create_join_credentials", "start_takeover", "stop_assistant", "end_call")
+    mod = sys.modules.get("backend.calls")
+    if mod is not None and all(hasattr(mod, f) for f in required):
+        return mod  # a module that implements the contract directly (tests inject fakes here)
     try:
-        mod = sys.modules.get("backend.calls")
-        if mod is None:
-            import backend.calls as _m  # noqa: F401
-            mod = sys.modules["backend.calls"]
-        required = ("create_join_credentials", "start_takeover", "stop_assistant", "end_call")
-        if not all(hasattr(mod, f) for f in required):
-            return _demo_calls_or_none()
-        return mod
+        from backend import calls_bridge  # Manav's CallSessionManager behind the contract
+        return calls_bridge
     except ImportError:
         return _demo_calls_or_none()
 
@@ -106,6 +104,29 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def _alias_access_header(request, call_next):
+    """Manav's call components send X-Tripwire-Access; treat it as X-Session-Token."""
+    h = request.scope["headers"]
+    if not any(k == b"x-session-token" for k, _ in h):
+        v = next((v for k, v in h if k == b"x-tripwire-access"), None)
+        if v is not None:
+            request.scope["headers"] = [*h, (b"x-session-token", v)]
+    return await call_next(request)
+
+
+try:
+    from backend.calls.errors import CallError, RolePermissionError, SessionAccessError
+
+    @app.exception_handler(CallError)
+    async def _call_error(request, exc):
+        from fastapi.responses import JSONResponse
+        code = 403 if isinstance(exc, (SessionAccessError, RolePermissionError)) else 409
+        return JSONResponse(status_code=code, content={"detail": str(exc), "source": "calls"})
+except ImportError:
+    pass
 
 
 # ── Auth helpers ────────────────────────────────────────────────────────
@@ -333,6 +354,39 @@ async def post_signal(session_id: str, body: dict, x_session_token: Optional[str
     else:
         raise HTTPException(status_code=400, detail=f"unknown signal: {sig}")
     return {"accepted": True}
+
+
+# ── Routes Manav's call components call (backend/calls via calls_bridge) ──
+
+def _bridge_or_501():
+    calls = _load_calls()
+    if calls is None or not hasattr(calls, "confirm_routing"):
+        raise HTTPException(status_code=501, detail="calls module unavailable")
+    return calls
+
+
+@app.post("/api/sessions/{session_id}/routing-confirmation")
+async def routing_confirmation(session_id: str, body: dict, x_session_token: Optional[str] = Header(None, alias="X-Session-Token")):
+    _auth_or_raise(session_id, x_session_token, {"wearer", "presenter"})
+    return await _bridge_or_501().confirm_routing(session_id, body)
+
+
+@app.post("/api/sessions/{session_id}/provider-join")
+async def provider_join(session_id: str, body: dict, x_session_token: Optional[str] = Header(None, alias="X-Session-Token")):
+    _auth_or_raise(session_id, x_session_token, {"caller", "wearer", "family", "presenter"})
+    return await _bridge_or_501().confirm_provider_join(session_id, body, x_session_token)
+
+
+@app.post("/api/sessions/{session_id}/family-joined")
+async def family_joined(session_id: str, body: dict, x_session_token: Optional[str] = Header(None, alias="X-Session-Token")):
+    _auth_or_raise(session_id, x_session_token, {"family", "presenter"})
+    return await _bridge_or_501().confirm_family_joined(session_id, body, x_session_token)
+
+
+@app.post("/api/sessions/{session_id}/reconnect-wearer")
+async def reconnect_wearer(session_id: str, body: dict, x_session_token: Optional[str] = Header(None, alias="X-Session-Token")):
+    _auth_or_raise(session_id, x_session_token, {"family", "wearer", "presenter"})
+    return await _bridge_or_501().reconnect_wearer(session_id, x_session_token)
 
 
 @app.post("/api/sessions/{session_id}/end")

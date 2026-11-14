@@ -28,7 +28,7 @@ class SessionState(StrEnum):
 
 LEGAL_TRANSITIONS: dict[SessionState, set[SessionState]] = {
     SessionState.monitoring: {SessionState.protecting, SessionState.ended},
-    SessionState.protecting: {SessionState.assistant_active, SessionState.ended},
+    SessionState.protecting: {SessionState.assistant_active, SessionState.family_joined, SessionState.ended},
     SessionState.assistant_active: {SessionState.family_joined, SessionState.ended},
     SessionState.family_joined: {SessionState.ended},
 }

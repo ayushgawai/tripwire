@@ -13,7 +13,7 @@ Required flow: suspicious call → detection → AI takeover → family alert �
 
 ## Blockers
 - 2026-11-14 · **All provider keys missing.** Naman has no `.env` yet, so Daily, Deepgram, Gemini and ElevenLabs are all BLOCKED (`docs/setup.md` §6). Owner: Naman.
-- 2026-11-14 · **`backend/calls/` and `frontend/components/call/` not pushed yet.** Without them there is no real audio takeover; the demo runs on the `DEMO_MODE` stand-in. The frontend never sends `wearer_audio_blocked`; Manav's call component must send it. Owner: Manav.
+- 2026-11-14 · **Dev: Manav's call components are not mounted in the pages yet** (`CallSurface.tsx` still shows a placeholder). Mount `CallRoom` / `useCallSession` from `@/components/call` with `accessToken` = that role's session token from `POST /api/sessions`. The backend accepts `X-Tripwire-Access` as the same token. Owner: Dev + Manav.
 
 ## Ayush: coordinator, shared contracts, demo, integration
 - [x] `.gitignore` (keeps `.env` out of git)
@@ -25,7 +25,8 @@ Required flow: suspicious call → detection → AI takeover → family alert �
 - [x] `make smoke` against a live backend with Pratham's real analyzer → 23/23 pass
 - [x] Integrated Pratham's `backend/intelligence` and Dev's frontend (`npm run build` OK)
 - [x] `DEMO_MODE=true` stand-in for `backend/calls`, used only while Manav's module is missing: takeover goes active after 1.5 s, family `/join` triggers family_joined, and every event is labelled demo replay. Proof: full HTTP flow monitoring → protecting → assistant_active → family_joined → reconnect → ended (410)
-- [ ] Merge all modules; full scenario works 3 times in a row
+- [x] Merged Manav's `manav/call-transport-takeover` into main. `backend/calls_bridge.py` puts his `CallSessionManager` behind the coordinator contract, shares one token per role, and maps his events onto coordinator hooks. Added routes `routing-confirmation`, `provider-join`, `family-joined`, `reconnect-wearer`; allowed `protecting → family_joined`. Proof: `.venv/bin/pytest -q` → 210 passed; smoke 23/23; full HTTP flow through Manav's mock provider: scam → protecting → routing confirmed → assistant_active → family-joined (assistant stopped) → explicit reconnect → end (410)
+- [ ] Full scenario in the browser, 3 times in a row (needs call components mounted in pages, plus keys for live Daily)
 - [ ] 90 s video plus one uncut proof recording
 
 ## Manav: calls, audio routing, voice worker

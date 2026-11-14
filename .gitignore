@@ -2,8 +2,12 @@
 .env.local
 .venv/
 __pycache__/
-*.pyc
+*.py[cod]
 .pytest_cache/
+.mypy_cache/
+*.egg-info/
+dist/
+build/
 node_modules/
 .next/
 .DS_Store
