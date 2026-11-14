@@ -100,7 +100,7 @@ export default function Launcher() {
   const liveParams = session ? { sessionId: session.id, token: null, tokens: session.tokens, replay: false } : null;
 
   return (
-    <div className="launch-page theme-dark min-h-screen text-ink">
+    <div className="launch-page min-h-screen text-ink">
       <div className="mx-auto max-w-6xl px-4 py-7 sm:px-6">
         {/* Top bar */}
         <header className="flex items-center justify-between">
@@ -112,22 +112,20 @@ export default function Launcher() {
         </header>
 
         <section className="launch-hero">
-          <div className="aurora" aria-hidden="true" />
           <div className="launch-copy">
             <p className="eyebrow">Introducing Tripwire</p>
-            <h1>A <span className="champagne-text">pause</span> when<br className="hidden sm:block" /> it matters.</h1>
-            <p className="hero-description">Quiet protection, worn every day. Tripwire runs on the Vexo band that listens with you all day, and also protects calls made through our app.</p>
+            <h1>A pause when<br className="hidden sm:block" /> it matters.</h1>
+            <p className="hero-description">Quiet protection, worn every day. The Vexo band listens with you. Tripwire protects calls through our app.</p>
             <p className="hero-detail">When a request feels wrong, a moment to pause.<br />And someone you trust, right there with you.</p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <a href="#live-demo" className="tw-button inline-flex items-center justify-center rounded-[14px] border border-champagne/40 px-6 py-3.5 text-sm font-semibold">Watch it work</a>
+            <div className="mt-8 flex flex-wrap justify-center gap-3">
+              <a href="#live-demo" className="tw-button inline-flex items-center justify-center rounded-full border border-line px-6 py-3.5 text-sm font-semibold">Watch it work</a>
               <Button size="lg" onClick={create} loading={busy}>Start a protected session</Button>
             </div>
             {err && <p role="alert" className="mt-4 text-sm text-danger">{err}</p>}
-            {liveParams && <a href="#live-demo" className="mt-4 inline-block text-sm text-champagne underline underline-offset-4">Session ready. Open your role windows below.</a>}
+            {liveParams && <a href="#live-demo" className="mt-4 inline-block text-sm text-sage underline underline-offset-4">Session ready. Open your role windows below.</a>}
             <p className="mt-5 text-xs text-ink-faint">Designed for the Vexo band. Built around the people you trust.</p>
           </div>
           <figure className="product-illustration" aria-label="Illustration of a Vexo wristband beside a protected phone call">
-            <div className="product-orbit" aria-hidden="true" />
             <div className="band-illustration" aria-hidden="true">
               <div className="band-strap" />
               <div className="band-face"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 18h7l4-8 5 14 4-8h6" /></svg><span>VEXO</span></div>

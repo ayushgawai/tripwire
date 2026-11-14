@@ -67,7 +67,7 @@ export default function CallerClient() {
   }, [view.lastAssistantUtterance]);
 
   return (
-    <div className="caller-page theme-dark min-h-screen bg-paper text-ink">
+    <div className="caller-page min-h-screen bg-paper text-ink">
       {(params.replay || view.demoReplay) && <ReplayRibbon />}
 
       {/* Top bar */}
@@ -104,14 +104,14 @@ export default function CallerClient() {
               )}
             >
               {aiOn ? (
-                <svg viewBox="0 0 24 24" className="h-12 w-12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <svg viewBox="0 0 24 24" className="h-12 w-12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 2a4 4 0 014 4v2a4 4 0 01-8 0V6a4 4 0 014-4z" />
                   <path d="M6 10a6 6 0 0012 0" />
                   <line x1="12" y1="18" x2="12" y2="22" />
                   <line x1="8" y1="22" x2="16" y2="22" />
                 </svg>
               ) : famOn ? (
-                <svg viewBox="0 0 24 24" className="h-12 w-12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <svg viewBox="0 0 24 24" className="h-12 w-12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
                   <circle cx="9" cy="7" r="4" />
                   <path d="M23 21v-2a4 4 0 00-3-3.87" />
@@ -125,7 +125,7 @@ export default function CallerClient() {
 
           {/* Status line */}
           <div className="text-center">
-            <h1 className="font-display text-4xl font-normal text-ink">
+            <h1 className="font-display text-5xl font-normal text-ink">
               {ended ? "Call ended" : aiOn ? "Tripwire assistant" : callee}
             </h1>
             <p className={cn(
@@ -155,7 +155,7 @@ export default function CallerClient() {
                   ))}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-cyan">Tripwire AI is speaking</p>
+                  <p className="text-sm font-semibold text-cyan">Tripwire AI is speaking</p>
                   <p className="mt-0.5 text-sm leading-relaxed text-ink-soft truncate">&ldquo;{view.lastAssistantUtterance.text}&rdquo;</p>
                 </div>
               </div>
