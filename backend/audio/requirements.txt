@@ -3,3 +3,4 @@ httpx>=0.27
 numpy>=1.26
 sounddevice>=0.4.6
 pytest>=8
+# optional, only for WEARABLE_TRANSPORT=ble (UNVERIFIED): bleak>=0.22 ; opuslib + system libopus for Opus
