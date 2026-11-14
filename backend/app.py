@@ -274,7 +274,7 @@ async def ingest_utterance(session_id: str, body: dict) -> dict:
         return {"accepted": True, "duplicate": False}
 
     mode = s.mode
-    if mode == "call" and body["speaker"] not in {"caller", "wearer"}:
+    if mode == "call" and body["speaker"] not in {"caller", "wearer", "ambient"}:  # ambient = Vexo band room mic
         return {"accepted": True, "duplicate": False}
     if mode == "ambient" and body["speaker"] != "ambient":
         return {"accepted": True, "duplicate": False}
@@ -311,15 +311,15 @@ async def ingest_utterance(session_id: str, body: dict) -> dict:
             else:
                 asyncio.create_task(_takeover_task(session_id, decision))
 
-    elif risk in ("review", "high") and action == "alert":
-        alerted = set(session.get_session(session_id).alerted_decision_ids)
-        if did not in alerted:
-            await session.publish_event(session_id, "family.alert", {
-                "decision_id": did,
-                "summary": decision.get("summary", ""),
-                "reasons": decision.get("reasons", []),
-                "evidence": decision.get("evidence", []),
-            })
+    elif (risk in ("review", "high") and action == "alert") or (mode == "ambient" and risk == "high"):
+        # Ambient (in-person, heard by the Vexo band): nothing to take over, so alert family once.
+        sess = session.get_session(session_id)
+        if did not in sess.alerted_decision_ids and (mode == "ambient" or not sess.alert):
+            sess.alerted_decision_ids.add(did)
+            alert = {"decision_id": did, "summary": decision.get("summary", ""),
+                     "reasons": decision.get("reasons", []), "evidence": decision.get("evidence", [])}
+            sess.alert = alert
+            await session.publish_event(session_id, "family.alert", alert)
 
     return {"accepted": True, "duplicate": False}
 
