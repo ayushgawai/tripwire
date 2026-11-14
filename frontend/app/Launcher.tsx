@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
-import { api, BACKEND_URL, tokenFrom } from "@/app/_lib/api";
+import { useEffect, useState } from "react";
+import { api, BACKEND_URL, type CreatedSession } from "@/app/_lib/api";
 import { roleLink } from "@/app/_lib/useSession";
 import type { SessionMode } from "@/app/_lib/types";
 import { Button } from "@/components/ui/Button";
@@ -16,7 +16,13 @@ const ROLES = [
 ] as const;
 
 export default function Launcher() {
-  const [session, setSession] = useState<{ id: string; token: string | null } | null>(null);
+  const [session, setSession] = useState<{ id: string; tokens: CreatedSession["tokens"] } | null>(null);
+  const [health, setHealth] = useState<"checking" | "up" | "down">("checking");
+  useEffect(() => {
+    let alive = true;
+    api.health().then(() => alive && setHealth("up"), () => alive && setHealth("down"));
+    return () => { alive = false; };
+  }, []);
   const [mode, setMode] = useState<SessionMode>("call");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -26,7 +32,8 @@ export default function Launcher() {
     setErr(null);
     try {
       const s = await api.createSession(mode);
-      setSession({ id: s.session_id, token: tokenFrom(s) ?? null });
+      if (!s.tokens) throw new Error("Backend did not return role tokens");
+      setSession({ id: s.session_id, tokens: s.tokens });
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
     } finally {
@@ -34,14 +41,17 @@ export default function Launcher() {
     }
   };
 
-  const replayParams = { sessionId: "replay_demo", token: null, replay: true };
-  const liveParams = session ? { sessionId: session.id, token: session.token, replay: false } : null;
+  const replayParams: LinkParams = { sessionId: "replay_demo", token: null, replay: true };
+  const liveParams = session ? { sessionId: session.id, token: null, tokens: session.tokens, replay: false } : null;
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-10">
       <header className="flex items-center justify-between">
         <Logo />
-        <span className="font-mono text-xs text-ink-faint">backend · {BACKEND_URL}</span>
+        <span className="inline-flex items-center gap-2 font-mono text-xs text-ink-faint">
+          <span className={cn("h-2 w-2 rounded-full", health === "up" ? "bg-safe" : health === "down" ? "bg-danger" : "bg-watch")} />
+          backend {health === "up" ? "up" : health === "down" ? "unreachable" : "…"} · {BACKEND_URL}
+        </span>
       </header>
 
       <section className="mt-16 max-w-2xl">
@@ -97,7 +107,9 @@ export default function Launcher() {
   );
 }
 
-function RoleLinks({ params }: { params: { sessionId: string; token: string | null; replay: boolean } }) {
+type LinkParams = Parameters<typeof roleLink>[1];
+
+function RoleLinks({ params }: { params: LinkParams }) {
   const [copied, setCopied] = useState<string | null>(null);
   const copy = async (role: string) => {
     try {

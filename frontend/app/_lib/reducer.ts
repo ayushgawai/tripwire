@@ -29,6 +29,7 @@ export function emptyView(session_id = "", mode: SessionMode = "call"): SessionV
     takeoverError: null,
     familyJoined: false,
     wearerReconnected: false,
+    demoReplay: false,
     errors: [],
     timeline: [],
     lastSequence: 0,
@@ -131,6 +132,7 @@ export function applyEvent(view: SessionView, ev: EventEnvelope): SessionView {
     lastSequence: typeof ev.sequence === "number" ? ev.sequence : view.lastSequence,
     seenEventIds: [...view.seenEventIds.slice(-499), ev.event_id],
     log: [...view.log.slice(-(MAX_LOG - 1)), ev],
+    demoReplay: view.demoReplay || p.demo_replay === true,
   };
 
   switch (ev.type) {
@@ -196,7 +198,9 @@ export function viewFromSnapshot(raw: unknown): SessionView {
     .filter((u): u is Utterance => !!u);
   const latest = normalizeDecision(r.latest_decision ?? r.decision ?? null);
   const state = isState(r.state) ? r.state : "monitoring";
-  const takeoverRaw = str(r.takeover_status ?? r.takeover);
+  // Contract: takeover = {status, wearer_audio_blocked, assistant_ready}. Tolerate a bare string too.
+  const tk = r.takeover && typeof r.takeover === "object" ? (r.takeover as Record<string, unknown>) : {};
+  const takeoverRaw = str(tk.status ?? r.takeover_status ?? r.takeover);
   const takeover =
     takeoverRaw === "starting" || takeoverRaw === "active" || takeoverRaw === "failed"
       ? takeoverRaw
@@ -213,9 +217,11 @@ export function viewFromSnapshot(raw: unknown): SessionView {
     latestDecision: latest,
     alert: normalizeAlert(r.alert, latest),
     takeover,
-    takeoverError: takeover === "failed" ? str(r.takeover_error, "Takeover failed.") : null,
+    takeoverError:
+      takeover === "failed" ? str(tk.reason ?? r.takeover_error, "Takeover could not be confirmed.") : null,
     familyJoined: state === "family_joined" || r.family_joined === true,
-    wearerReconnected: r.wearer_reconnected === true,
+    // wearer_connected goes false from protecting onward and true again only on wearer_reconnect.
+    wearerReconnected: state === "family_joined" && r.wearer_connected === true,
     lastSequence: typeof r.last_sequence === "number" ? r.last_sequence : 0,
     timeline: [{ state, at: new Date().toISOString() }],
   };

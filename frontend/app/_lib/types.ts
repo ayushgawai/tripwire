@@ -23,7 +23,6 @@ export type EventType =
   | "family.joined"
   | "session.ended"
   | "error"
-  // Proposed (not yet in shared contracts): daughter deliberately hands audio back to the wearer.
   | "wearer.reconnected";
 
 export interface EventEnvelope<P = Record<string, unknown>> {
@@ -84,6 +83,8 @@ export interface SessionView {
   takeoverError: string | null;
   familyJoined: boolean;
   wearerReconnected: boolean;
+  /** True when any event carried payload.demo_replay (backend DEMO_MODE) — UI must label it. */
+  demoReplay: boolean;
   errors: { message: string; at: string }[];
   timeline: TimelineEntry[];
   lastSequence: number;

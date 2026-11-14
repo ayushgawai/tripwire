@@ -44,7 +44,7 @@ export default function PresenterClient() {
 
   return (
     <div className="theme-dark min-h-screen bg-paper text-ink">
-      {params.replay && <ReplayRibbon />}
+      {(params.replay || view.demoReplay) && <ReplayRibbon />}
       {/* ---------- Top bar ---------- */}
       <header className="sticky top-0 z-40 border-b border-line bg-paper/85 backdrop-blur">
         <div className="mx-auto flex max-w-[1500px] flex-wrap items-center gap-3 px-5 py-3">

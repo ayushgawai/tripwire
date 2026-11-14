@@ -86,7 +86,7 @@ export default function FamilyClient() {
 
   return (
     <div className={cn("min-h-screen transition-colors duration-700", alert && !view.familyJoined && !ended ? "bg-danger-soft/60" : "bg-paper")}>
-      {params.replay && <ReplayRibbon />}
+      {(params.replay || view.demoReplay) && <ReplayRibbon />}
       <header className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-5 py-5">
         <div className="flex items-center gap-3">
           <Logo />

@@ -28,7 +28,7 @@ export default function CallerClient() {
   const who = ended ? "Call ended" : aiOn ? `${callee} · on hold` : famOn ? `${callee} · family on the line` : "Connected";
   return (
     <div className="theme-dark min-h-screen bg-paper text-ink">
-      {params.replay && <ReplayRibbon />}
+      {(params.replay || view.demoReplay) && <ReplayRibbon />}
       <main className="mx-auto flex min-h-screen max-w-md flex-col px-6 py-6">
         <div className="flex justify-end"><ConnectionBadge status={status} /></div>
 

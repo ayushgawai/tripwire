@@ -87,6 +87,8 @@ test("snapshot restores state for refreshed clients", () => {
     transcript: [{ utterance_id: "u1", speaker: "caller", text: "Buy gift cards now" }],
     latest_decision: { decision_id: "d1", risk: "high", reasons: ["urgency"], evidence: [{ utterance_id: "u1", quote: "gift cards" }], summary: "x", recommended_action: "takeover" },
     alert: { summary: "x" },
+    wearer_connected: false,
+    takeover: { status: "active", wearer_audio_blocked: true, assistant_ready: true },
   });
   assert.equal(v.state, "assistant_active");
   assert.equal(v.takeover, "active");
@@ -99,4 +101,23 @@ test("highlightSegments marks only quotes present in the text", () => {
   const segs = highlightSegments("Buy gift cards now. Do not tell.", ["gift cards", "not in text", "Do not tell"]);
   assert.deepEqual(segs.filter((s) => s.hit).map((s) => s.text), ["gift cards", "Do not tell"]);
   assert.equal(segs.map((s) => s.text).join(""), "Buy gift cards now. Do not tell.");
+});
+
+test("contract snapshot: takeover object, failed status, wearer_connected", () => {
+  const failed = viewFromSnapshot({ session_id: "s1", state: "protecting", takeover: { status: "failed", wearer_audio_blocked: false, assistant_ready: false } });
+  assert.equal(failed.takeover, "failed");
+  assert.equal(failed.state, "protecting", "failed takeover keeps state protecting");
+  const rec = viewFromSnapshot({ session_id: "s1", state: "family_joined", wearer_connected: true, takeover: { status: "active" } });
+  assert.equal(rec.wearerReconnected, true);
+  const notRec = viewFromSnapshot({ session_id: "s1", state: "family_joined", wearer_connected: false });
+  assert.equal(notRec.wearerReconnected, false);
+  const fresh = viewFromSnapshot({ session_id: "s1", state: "monitoring", wearer_connected: true });
+  assert.equal(fresh.wearerReconnected, false, "monitoring wearer is connected but was never 'reconnected'");
+});
+
+test("payload.demo_replay marks the view as demo replay", () => {
+  const live = applyEvent(emptyView("s1"), { event_id: "a", session_id: "s1", sequence: 1, type: "transcript.final", timestamp: "", payload: { utterance_id: "u", speaker: "caller", text: "hi" } });
+  assert.equal(live.demoReplay, false);
+  const demo = applyEvent(live, { event_id: "b", session_id: "s1", sequence: 2, type: "transcript.final", timestamp: "", payload: { utterance_id: "u2", speaker: "caller", text: "hi", demo_replay: true } });
+  assert.equal(demo.demoReplay, true);
 });

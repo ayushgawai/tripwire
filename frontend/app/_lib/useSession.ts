@@ -9,7 +9,14 @@ import { REPLAY_END, REPLAY_FAMILY_JOIN, REPLAY_RECONNECT, getScenario } from ".
 import { ReplayBus } from "./replay.ts";
 import type { EventEnvelope, JoinCredentials, Role, SessionView } from "./types.ts";
 
-export type ConnectionStatus = "idle" | "connecting" | "live" | "reconnecting" | "offline" | "replay";
+export type ConnectionStatus =
+  | "idle"
+  | "connecting"
+  | "live"
+  | "reconnecting"
+  | "offline"
+  | "closed"
+  | "replay";
 
 type Action =
   | { t: "event"; e: EventEnvelope }
@@ -47,10 +54,15 @@ export function useSessionParams(): SessionParams {
   };
 }
 
-export function roleLink(role: string, p: Pick<SessionParams, "sessionId" | "token" | "replay">) {
+/** `token` may be one token, or the per-role map from POST /api/sessions. */
+export function roleLink(
+  role: string,
+  p: { sessionId: string; token?: string | null; tokens?: Partial<Record<string, string>> | null; replay: boolean },
+) {
   const q = new URLSearchParams();
   if (p.sessionId) q.set("session", p.sessionId);
-  if (p.token) q.set("token", p.token);
+  const t = p.tokens?.[role] ?? p.token;
+  if (t) q.set("token", t);
   if (p.replay) q.set("replay", "1");
   return `/${role}?${q.toString()}`;
 }
@@ -86,6 +98,7 @@ export function useSession(params: SessionParams) {
     let cancelled = false;
     let attempt = 0;
     let retry: ReturnType<typeof setTimeout> | null = null;
+    let ended = false;
 
     const connect = async () => {
       if (cancelled) return;
@@ -99,6 +112,11 @@ export function useSession(params: SessionParams) {
       } catch (err) {
         if (cancelled) return;
         setLastError(err instanceof Error ? err.message : String(err));
+        if (err instanceof ApiError && err.status === 410) {
+          setStatus("closed"); // Session ended; nothing to reconnect to.
+          setLastError(null);
+          return;
+        }
         if (err instanceof ApiError && (err.status === 401 || err.status === 403 || err.status === 404)) {
           setStatus("offline");
           return; // Don't hammer a session we can't access.
@@ -121,13 +139,19 @@ export function useSession(params: SessionParams) {
         try {
           const data = JSON.parse(String(m.data));
           const list: EventEnvelope[] = Array.isArray(data) ? data : [data];
-          for (const e of list) if (e && e.type) dispatch({ t: "event", e });
+          for (const e of list) {
+            if (!e || !e.type) continue;
+            if (e.type === "session.ended") ended = true;
+            dispatch({ t: "event", e });
+          }
         } catch {
           /* ignore non-JSON frames (keepalives) */
         }
       };
       ws.onclose = () => {
-        if (!cancelled) scheduleRetry();
+        if (cancelled) return;
+        if (ended) setStatus("closed"); // backend closes subscribers on end
+        else scheduleRetry();
       };
       ws.onerror = () => ws?.close();
     };
@@ -180,7 +204,7 @@ export function useSession(params: SessionParams) {
 
   const reconnectWearer = useCallback(async () => {
     if (replay) return busRef.current?.run(REPLAY_RECONNECT);
-    await guard(() => api.reconnectWearer(sessionId, token));
+    await guard(() => api.signal(sessionId, "wearer_reconnect", token));
   }, [replay, sessionId, token, guard]);
 
   const requestTakeover = useCallback(

@@ -14,13 +14,10 @@ export class ApiError extends Error {
   }
 }
 
-/** Session access secret. Sent as a bearer token; the backend decides the exact scheme. */
+/** Per-role session token (shared/COORDINATOR.md "Auth"): header X-Session-Token, WS ?token=. */
 function headers(token?: string | null): HeadersInit {
   const h: Record<string, string> = { "Content-Type": "application/json" };
-  if (token) {
-    h.Authorization = `Bearer ${token}`;
-    h["X-Session-Token"] = token;
-  }
+  if (token) h["X-Session-Token"] = token;
   return h;
 }
 
@@ -58,14 +55,17 @@ async function request<T>(
   return body as T;
 }
 
+export type TokenRole = Role | "presenter";
+
 export interface CreatedSession {
   session_id: string;
   state: string;
-  /** Invite secret / scoped token if the backend issues one. */
-  token?: string;
-  invite?: string;
+  /** One opaque token per role. */
+  tokens?: Partial<Record<TokenRole, string>>;
   [key: string]: unknown;
 }
+
+export type Signal = "wearer_audio_blocked" | "wearer_reconnect";
 
 export const api = {
   createSession: (mode: SessionMode = "call") =>
@@ -93,13 +93,17 @@ export const api = {
       token,
       body: "{}",
     }),
-  /** PROPOSED endpoint — not in the frozen contract yet. Daughter hands audio back to the wearer. */
-  reconnectWearer: (id: string, token?: string | null) =>
-    request<unknown>(`/api/sessions/${encodeURIComponent(id)}/reconnect-wearer`, {
+  /**
+   * wearer_audio_blocked: wearer client, only after it has really stopped playing caller audio.
+   * wearer_reconnect: family (or presenter) token, only in state family_joined.
+   */
+  signal: (id: string, signal: Signal, token?: string | null) =>
+    request<{ accepted: boolean }>(`/api/sessions/${encodeURIComponent(id)}/signals`, {
       method: "POST",
       token,
-      body: "{}",
+      body: JSON.stringify({ signal }),
     }),
+  health: () => request<{ ok: boolean }>("/api/health"),
 };
 
 export function wsUrl(id: string, token?: string | null): string {
@@ -108,6 +112,6 @@ export function wsUrl(id: string, token?: string | null): string {
   return `${base}/ws/sessions/${encodeURIComponent(id)}${q}`;
 }
 
-export function tokenFrom(s: CreatedSession): string | undefined {
-  return (s.token as string | undefined) ?? (s.invite as string | undefined);
+export function tokenFor(s: CreatedSession, role: TokenRole): string | null {
+  return s.tokens?.[role] ?? null;
 }

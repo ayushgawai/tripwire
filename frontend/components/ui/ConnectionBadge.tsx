@@ -8,6 +8,7 @@ const META: Record<ConnectionStatus, { label: string; tone: "safe" | "watch" | "
   live: { label: "Live", tone: "safe" },
   reconnecting: { label: "Reconnecting", tone: "watch" },
   offline: { label: "Offline", tone: "danger" },
+  closed: { label: "Session closed", tone: "muted" },
   replay: { label: "Demo replay", tone: "ai" },
 };
 
@@ -22,7 +23,7 @@ export function ConnectionBadge({ status, className }: { status: ConnectionStatu
         className,
       )}
     >
-      <Pulse tone={m.tone} still={status === "offline" || status === "idle"} size={7} />
+      <Pulse tone={m.tone} still={status === "offline" || status === "idle" || status === "closed"} size={7} />
       {m.label}
     </span>
   );

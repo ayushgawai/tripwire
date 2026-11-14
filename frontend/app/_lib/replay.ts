@@ -73,7 +73,7 @@ export class ReplayBus {
       sequence,
       type: step.type,
       timestamp: new Date().toISOString(),
-      payload: { ...step.payload, replay: true },
+      payload: { ...step.payload, demo_replay: true },
     };
     this.record(envelope);
     this.post({ kind: "event", envelope });
