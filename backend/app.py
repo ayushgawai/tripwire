@@ -25,7 +25,7 @@ from backend import session  # noqa: E402
 logger = logging.getLogger("tripwire")
 
 VALID_RISKS = {"low", "medium", "high", "review"}
-VALID_ACTIONS = {"monitor", "alert", "takeover"}
+VALID_ACTIONS = {"none", "alert", "takeover"}
 
 Token = Annotated[Optional[str], Header(alias="X-Session-Token")]
 

@@ -37,7 +37,7 @@ class FakeIntelligence:
         return {
             "decision_id": f"dec_{session_id}_0",
             "risk": "low",
-            "recommended_action": "monitor",
+            "recommended_action": "none",
             "summary": "Normal",
             "reasons": [],
             "evidence": [],
