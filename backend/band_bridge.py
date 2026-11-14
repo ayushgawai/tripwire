@@ -46,7 +46,8 @@ async def main() -> None:
     ap.add_argument("--session")
     ap.add_argument("--token", help="presenter token for --session")
     ap.add_argument("--mode", default="ambient", choices=["ambient", "call"])
-    ap.add_argument("--no-mic", action="store_true", help="LED + taps/fall only (audio comes from elsewhere)")
+    ap.add_argument("--no-mic", action="store_true", help="LED + fall alerts only (audio comes from elsewhere)")
+    ap.add_argument("--sos", action="store_true", help="also let a double-tap send an SOS (off: detection is automatic)")
     a = ap.parse_args()
 
     http = httpx.AsyncClient(base_url=a.backend, timeout=20)
@@ -69,7 +70,8 @@ async def main() -> None:
         await http.post(f"/api/sessions/{sid}/band-event", headers={"X-Session-Token": token}, json={"kind": kind})
         print(f"BAND {kind.upper()}: family alerted")
 
-    band.on("double-tap", lambda e: asyncio.ensure_future(band_alert("sos")))
+    if a.sos:
+        band.on("double-tap", lambda e: asyncio.ensure_future(band_alert("sos")))
     band.on("free-fall", lambda e: asyncio.ensure_future(band_alert("fall")))
     await band.configure(events=True)
 
@@ -81,7 +83,7 @@ async def main() -> None:
         await band.configure(audio=True)                        # solid blue = listening
         print("band mic on (solid blue). Listening...")
     else:
-        print("band ready (no mic): LED alerts, double-tap = SOS, free-fall = fall alert. Listening...")
+        print("band ready (no mic): automatic LED alerts + fall detection. Listening...")
 
     async def post(text: str) -> None:
         await http.post(f"/api/sessions/{sid}/transcripts", headers={"X-Session-Token": token},
