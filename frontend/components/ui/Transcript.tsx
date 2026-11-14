@@ -6,8 +6,8 @@ import type { Speaker, Utterance } from "@/app/_lib/types";
 import { cn } from "./cn";
 
 const SPEAKER_STYLE: Record<Speaker, { dot: string; name: string; bubble: string }> = {
-  caller: { dot: "bg-caller", name: "text-caller", bubble: "bg-card border-line" },
-  wearer: { dot: "bg-safe", name: "text-safe", bubble: "bg-card border-line" },
+  caller: { dot: "bg-caller", name: "text-caller", bubble: "bg-card border-l-caller/60 border-line" },
+  wearer: { dot: "bg-safe", name: "text-safe", bubble: "bg-card border-l-safe/60 border-line" },
   family: { dot: "bg-violet", name: "text-violet", bubble: "bg-violet-soft/50 border-violet/20" },
   assistant: { dot: "bg-cyan", name: "text-cyan", bubble: "bg-cyan-soft/50 border-cyan/20" },
   ambient: { dot: "bg-ink-faint", name: "text-ink-soft", bubble: "bg-card border-line" },

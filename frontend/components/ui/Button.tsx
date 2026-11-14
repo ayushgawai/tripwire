@@ -5,11 +5,11 @@ type Variant = "primary" | "danger" | "family" | "ghost" | "outline";
 type Size = "sm" | "md" | "lg" | "xl";
 
 const VARIANT: Record<Variant, string> = {
-  primary: "bg-ink text-paper hover:opacity-90",
-  danger: "bg-danger text-white hover:brightness-110",
-  family: "bg-family text-white hover:brightness-110",
+  primary: "button-champagne",
+  danger: "button-danger hover:brightness-110",
+  family: "button-family hover:brightness-110",
   ghost: "bg-transparent text-ink-soft hover:bg-line/60",
-  outline: "border border-line bg-card text-ink hover:border-ink-faint",
+  outline: "border border-bronze/50 bg-transparent text-ink hover:border-champagne",
 };
 const SIZE: Record<Size, string> = {
   sm: "h-8 px-3 text-xs rounded-lg",
@@ -36,8 +36,8 @@ export function Button({
       {...rest}
       disabled={disabled || loading}
       className={cn(
-        "inline-flex select-none items-center justify-center gap-2 font-semibold transition",
-        "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-family/30",
+        "tw-button inline-flex select-none items-center justify-center gap-2 font-semibold transition",
+        "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-champagne/50",
         "disabled:cursor-not-allowed disabled:opacity-50",
         VARIANT[variant],
         SIZE[size],

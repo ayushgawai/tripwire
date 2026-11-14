@@ -27,8 +27,8 @@ export function EvidenceList({
           <li key={`${e.utterance_id}-${i}`} className="animate-rise" style={{ animationDelay: `${i * 90}ms` }}>
             <blockquote
               className={cn(
-                "relative rounded-2xl border-l-4 border-danger bg-danger-soft/70 py-3 pl-4 pr-4 font-display text-ink",
-                large ? "text-2xl leading-snug" : "text-lg leading-snug",
+                "relative rounded-r-2xl border-l border-danger bg-danger-soft/70 py-3 pl-4 pr-4 font-display text-ink",
+                large ? "text-2xl leading-snug" : "text-2xl leading-snug",
               )}
             >
               “{e.quote}”

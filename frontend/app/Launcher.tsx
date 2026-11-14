@@ -100,28 +100,67 @@ export default function Launcher() {
   const liveParams = session ? { sessionId: session.id, token: null, tokens: session.tokens, replay: false } : null;
 
   return (
-    <div className="theme-dark min-h-screen text-ink">
-      <div className="mx-auto max-w-6xl px-6 py-8">
+    <div className="launch-page theme-dark min-h-screen text-ink">
+      <div className="mx-auto max-w-6xl px-4 py-7 sm:px-6">
         {/* Top bar */}
         <header className="flex items-center justify-between">
           <Logo />
-          <span className="inline-flex items-center gap-2 font-mono text-xs text-ink-faint">
+          <span className="backend-health inline-flex items-center gap-2 font-mono text-xs text-ink-faint">
             <span className={cn("h-2 w-2 rounded-full", health === "up" ? "bg-safe" : health === "down" ? "bg-danger" : "bg-watch")} />
             backend {health === "up" ? "up" : health === "down" ? "unreachable" : "…"} · {BACKEND_URL}
           </span>
         </header>
 
-        {/* Hero split */}
-        <div className="mt-16 grid items-start gap-10 lg:grid-cols-[1fr_1.1fr]">
-          {/* Left: headline + controls */}
+        <section className="launch-hero">
+          <div className="aurora" aria-hidden="true" />
+          <div className="launch-copy">
+            <p className="eyebrow">Introducing Tripwire</p>
+            <h1>A <span className="champagne-text">pause</span> when<br className="hidden sm:block" /> it matters.</h1>
+            <p className="hero-description">Quiet protection, worn every day. Tripwire runs on the Vexo band that listens with you all day, and also protects calls made through our app.</p>
+            <p className="hero-detail">When a request feels wrong, a moment to pause.<br />And someone you trust, right there with you.</p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <a href="#live-demo" className="tw-button inline-flex items-center justify-center rounded-[14px] border border-champagne/40 px-6 py-3.5 text-sm font-semibold">Watch it work</a>
+              <Button size="lg" onClick={create} loading={busy}>Start a protected session</Button>
+            </div>
+            {err && <p role="alert" className="mt-4 text-sm text-danger">{err}</p>}
+            {liveParams && <a href="#live-demo" className="mt-4 inline-block text-sm text-champagne underline underline-offset-4">Session ready. Open your role windows below.</a>}
+            <p className="mt-5 text-xs text-ink-faint">Designed for the Vexo band. Built around the people you trust.</p>
+          </div>
+          <figure className="product-illustration" aria-label="Illustration of a Vexo wristband beside a protected phone call">
+            <div className="product-orbit" aria-hidden="true" />
+            <div className="band-illustration" aria-hidden="true">
+              <div className="band-strap" />
+              <div className="band-face"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 18h7l4-8 5 14 4-8h6" /></svg><span>VEXO</span></div>
+              <div className="band-clasp" />
+            </div>
+            <div className="phone-illustration">
+              <div className="phone-speaker" />
+              <div className="flex items-center justify-between"><Logo compact /><span className="text-xs text-ink-soft">Protected call</span></div>
+              <div className="phone-contact"><span>M</span><p>Mom</p><small>Call through Tripwire</small></div>
+              <div className="illustration-status"><span className="illustration-monitor">Monitoring</span><span className="illustration-active">Assistant active</span></div>
+              <div className="illustration-quote"><p className="text-xs text-ink-soft">Caller</p><blockquote>“Please <mark className="evidence">buy the gift cards</mark> and <mark className="evidence">keep this between us.</mark>”</blockquote></div>
+              <div className="illustration-family"><span className="h-2 w-2 rounded-full bg-family" /><div><p>Family alerted</p><small>The exact words. A chance to help.</small></div></div>
+              <div className="phone-home" />
+            </div>
+            <figcaption><span>Vexo band + Tripwire</span><span>Illustration</span></figcaption>
+          </figure>
+        </section>
+
+        <section className="how-it-works" aria-labelledby="how-title">
+          <div className="section-heading"><p className="eyebrow">How it works</p><h2 id="how-title">A little space. A better decision.</h2></div>
+          <div className="how-grid">
+            <article><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><rect x="9" y="7" width="14" height="18" rx="6" /><path d="M12 7V2h8v5M12 25v5h8v-5M12 16h3l2-4 2 7 2-3" /></svg><span className="step-number">01</span><h3>Detects pressure</h3><p>The Vexo band listens with you all day. Tripwire also watches for high-pressure requests in calls through our app.</p></article>
+            <article><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><circle cx="16" cy="16" r="12" /><path d="M12 11v10M20 11v10" /></svg><span className="step-number">02</span><h3>Pauses the call</h3><p>An identified AI assistant holds the caller while you receive a calm warning and a moment to think.</p></article>
+            <article><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><circle cx="12" cy="10" r="4" /><path d="M3 27v-4a9 9 0 0118 0v4M22 7a4 4 0 010 8M24 19a7 7 0 015 6" /></svg><span className="step-number">03</span><h3>Brings in family</h3><p>Someone you trust gets the exact words that raised concern and can join the call to help.</p></article>
+          </div>
+        </section>
+        <div className="principles-strip"><span>Identifies itself as AI</span><span>Never speaks for you</span><span>Never moves money</span><span>Family decides when you rejoin</span></div>
+
+        <div id="live-demo" className="demo-console mt-20 grid items-start gap-8 lg:grid-cols-[1fr_1.1fr]">
           <section className="flex flex-col">
-            <h1 className="font-display text-5xl font-semibold leading-[1.08] tracking-tight text-ink sm:text-6xl">
-              Pause a risky call and bring in family.
-            </h1>
-            <p className="mt-5 text-lg leading-relaxed text-ink-soft">
-              Tripwire notices a high-pressure request on a call, has an AI assistant hold the caller,
-              and brings in someone the wearer trusts — with the exact words that raised concern.
-            </p>
+            <p className="eyebrow">Experience Tripwire</p>
+            <h2 className="mt-3 font-display text-4xl font-normal sm:text-5xl">Try the live demo.</h2>
+            <p className="mt-4 max-w-md text-base leading-relaxed text-ink-soft">Start a session, then open each perspective. Follow the call from the wearer to the person they trust.</p>
 
             {/* Mode toggle + Start */}
             <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -166,7 +205,7 @@ export default function Launcher() {
               <div className="rounded-3xl border border-line bg-card p-5 shadow-xl shadow-ink/5">
                 <div className="mb-4 flex items-center justify-between">
                   <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ink-faint">Session windows</p>
-                  <span className="font-mono text-[11px] tabular-nums text-ink-faint/60">{liveParams.sessionId}</span>
+                  <span className="font-mono text-[11px] tabular-nums text-ink-faint">{liveParams.sessionId}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2.5">
                   {ROLES.map((r) => {
@@ -221,7 +260,7 @@ export default function Launcher() {
             ) : (
               /* Preview cards (no session yet) */
               <div className="rounded-3xl border border-line/60 bg-card/40 p-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ink-faint/60 mb-4">Role windows</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ink-faint mb-4">Role windows</p>
                 <div className="grid grid-cols-2 gap-2.5">
                   {ROLES.map((r) => {
                     const c = COLOR_MAP[r.color];
@@ -234,9 +273,9 @@ export default function Launcher() {
                           <span className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-sm font-bold opacity-60", c.bg, c.text)}>
                             {r.glyph}
                           </span>
-                          <span className="text-sm font-semibold text-ink-faint/70">{r.label}</span>
+                          <span className="text-sm font-semibold text-ink-faint">{r.label}</span>
                         </div>
-                        <p className="mt-1.5 pl-[42px] text-[11px] leading-snug text-ink-faint/50">{r.hint}</p>
+                        <p className="mt-1.5 pl-[42px] text-[11px] leading-snug text-ink-faint">{r.hint}</p>
                       </div>
                     );
                   })}
@@ -247,16 +286,17 @@ export default function Launcher() {
             {/* Demo replay — clearly labeled, secondary */}
             <section className="rounded-2xl border border-ai/15 bg-ai-soft/20 p-5">
               <h2 className="text-sm font-semibold text-ai/80">Demo replay</h2>
-              <p className="mt-1 text-xs text-ink-faint/70 leading-relaxed">
+              <p className="mt-1 text-xs text-ink-faint leading-relaxed">
                 Local fixture events, synced across tabs. For development and demo only — not live inference.
               </p>
               <RoleGrid params={replayParams} />
-              <p className="mt-3 text-[11px] text-ink-faint/50">
+              <p className="mt-3 text-[11px] text-ink-faint">
                 Open Presenter, then press "Run replay". Other open tabs follow along.
               </p>
             </section>
           </section>
         </div>
+        <footer className="launch-footer"><Logo /><p>Prototype. Calls through our app.</p><span>Built for Vexo Hacks</span></footer>
       </div>
     </div>
   );
@@ -312,7 +352,7 @@ function RoleGrid({ params }: { params: LinkParams }) {
             >
               {r.label} <span aria-hidden="true" className="text-ink-faint">&#8599;</span>
             </Link>
-            <p className="text-[11px] leading-snug text-ink-faint/60">{r.hint}</p>
+            <p className="text-[11px] leading-snug text-ink-faint">{r.hint}</p>
             <button
               onClick={() => copy(r.id)}
               className="mt-1 self-start rounded-lg border border-line/60 px-2 py-0.5 text-[11px] font-semibold text-ink-soft hover:text-ink transition-colors"
@@ -323,7 +363,7 @@ function RoleGrid({ params }: { params: LinkParams }) {
         ))}
       </div>
       <Button variant="outline" className="mt-3 w-full" size="md" onClick={openAll}>Open all four windows</Button>
-      {!params.replay && <p className="mt-2 font-mono text-[11px] text-ink-faint/50">session {params.sessionId}</p>}
+      {!params.replay && <p className="mt-2 font-mono text-[11px] text-ink-faint">session {params.sessionId}</p>}
     </div>
   );
 }

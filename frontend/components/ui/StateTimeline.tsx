@@ -20,9 +20,9 @@ export function StateTimeline({
   return (
     <ol className="relative grid grid-cols-5 gap-2" aria-label="Session state timeline">
       {/* Track */}
-      <div className="absolute left-[10%] right-[10%] top-[11px] h-0.5 bg-line" aria-hidden />
+      <div className="absolute left-[10%] right-[10%] top-[11px] h-px bg-line" aria-hidden />
       <div
-        className="absolute left-[10%] top-[11px] h-0.5 bg-ink transition-all duration-700"
+        className="absolute left-[10%] top-[11px] h-px bg-champagne/60 transition-all duration-700"
         style={{ width: `${(Math.max(0, current) / (ORDER.length - 1)) * 80}%` }}
         aria-hidden
       />
@@ -35,15 +35,15 @@ export function StateTimeline({
           <li key={s} className="relative flex flex-col items-center gap-2 text-center">
             <span
               className={cn(
-                "relative z-10 flex h-6 w-6 items-center justify-center rounded-full border-2 bg-card transition",
-                done && "border-ink bg-ink",
-                now && "border-ink",
+                "relative z-10 flex h-6 w-6 items-center justify-center rounded-full border bg-card transition",
+                done && "border-champagne bg-champagne",
+                now && "border-champagne shadow-lg shadow-champagne/10",
                 !done && !now && "border-line",
                 isFail && "border-danger",
               )}
             >
               {done && (
-                <svg viewBox="0 0 16 16" className="h-3 w-3 stroke-paper" fill="none" strokeWidth="2.5" strokeLinecap="round">
+                <svg viewBox="0 0 16 16" className="h-3 w-3 stroke-action-ink" fill="none" strokeWidth="2.5" strokeLinecap="round">
                   <path d="M3.5 8.5l3 3 6-7" />
                 </svg>
               )}

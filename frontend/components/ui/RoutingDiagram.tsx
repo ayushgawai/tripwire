@@ -96,7 +96,7 @@ export function RoutingDiagram({ view }: { view: SessionView }) {
                 <line
                   x1={l.from[0]} y1={l.from[1]} x2={mx - 4} y2={my}
                   stroke="var(--color-danger)"
-                  strokeWidth="2.5"
+                  strokeWidth="1.25"
                   strokeLinecap="round"
                   opacity="0.5"
                 />
@@ -104,14 +104,15 @@ export function RoutingDiagram({ view }: { view: SessionView }) {
                 <line
                   x1={mx + 4} y1={my} x2={l.to[0]} y2={l.to[1]}
                   stroke="var(--color-danger)"
-                  strokeWidth="2.5"
+                  strokeWidth="1.25"
                   strokeLinecap="round"
                   opacity="0.5"
                 />
                 {/* Glitch X at break point */}
-                <g transform={`translate(${mx}, ${my})`} className="animate-glitch">
-                  <line x1="-6" y1="-6" x2="6" y2="6" stroke="var(--color-danger)" strokeWidth="2.5" strokeLinecap="round" />
-                  <line x1="6" y1="-6" x2="-6" y2="6" stroke="var(--color-danger)" strokeWidth="2.5" strokeLinecap="round" />
+                <g transform={`translate(${mx}, ${my})`} className="routing-cut">
+                  <circle r="11" fill="var(--color-danger-soft)" stroke="var(--color-danger)" strokeWidth="0.75" />
+                  <line x1="-6" y1="-6" x2="6" y2="6" stroke="var(--color-danger)" strokeWidth="1.25" strokeLinecap="round" />
+                  <line x1="6" y1="-6" x2="-6" y2="6" stroke="var(--color-danger)" strokeWidth="1.25" strokeLinecap="round" />
                 </g>
               </g>
             );
@@ -136,7 +137,7 @@ export function RoutingDiagram({ view }: { view: SessionView }) {
               <line
                 x1={l.from[0]} y1={l.from[1]} x2={l.to[0]} y2={l.to[1]}
                 stroke={l.tone}
-                strokeWidth="2.5"
+                strokeWidth="1.25"
                 strokeLinecap="round"
                 strokeDasharray="8 12"
                 className="animate-pulse-travel"
@@ -145,7 +146,7 @@ export function RoutingDiagram({ view }: { view: SessionView }) {
               <line
                 x1={l.from[0]} y1={l.from[1]} x2={l.to[0]} y2={l.to[1]}
                 stroke={l.tone}
-                strokeWidth="2.5"
+                strokeWidth="1.25"
                 strokeLinecap="round"
                 filter="url(#glow)"
                 opacity="0.9"
@@ -155,7 +156,7 @@ export function RoutingDiagram({ view }: { view: SessionView }) {
         })}
 
         {/* Nodes */}
-        <Node at={N.caller} label="Caller" tone="#f5b544" active={!ended} icon="call" />
+        <Node at={N.caller} label="Caller" tone="var(--color-caller)" active={!ended} icon="call" />
         <Node at={N.wearer} label="Wearer" tone="var(--color-safe)" active={!ended} muted={protectedWearer} />
         <Node at={N.ai} label="Tripwire AI" tone="var(--color-cyan)" active={ai} />
         <Node at={N.family} label="Family" tone="var(--color-violet)" active={fam} />
@@ -192,14 +193,15 @@ function Node({
   return (
     <g transform={`translate(${at[0]}, ${at[1]})`} opacity={active ? 1 : 0.3}>
       {/* Outer ring */}
-      <circle r="22" fill={tone} opacity="0.08" />
+      <circle r="25" fill={tone} opacity="0.10" filter="url(#glow)" />
+      <circle r="20" fill="none" stroke={tone} strokeWidth="0.6" opacity="0.35" />
       {/* Inner fill */}
       <circle r="13" fill={tone} opacity={muted ? "0.5" : "0.9"} />
       {icon === "call" && (
         <path
           d="M-4 -2 Q0 -6 4 -2 Q7 1 4 5 Q0 9 -4 5 Q-7 1 -4 -2"
           fill="none"
-          stroke="#060a18"
+          stroke="var(--color-paper)"
           strokeWidth="1.5"
           strokeLinecap="round"
         />
@@ -208,7 +210,7 @@ function Node({
         <text
           y="1"
           textAnchor="middle"
-          fill="#060a18"
+          fill="var(--color-paper)"
           fontSize="9"
           fontFamily="var(--font-mono)"
           fontWeight="700"
@@ -220,7 +222,7 @@ function Node({
         <text
           y="1"
           textAnchor="middle"
-          fill="#060a18"
+          fill="var(--color-paper)"
           fontSize="8"
           fontFamily="var(--font-mono)"
           fontWeight="700"
@@ -232,7 +234,7 @@ function Node({
         <text
           y="1"
           textAnchor="middle"
-          fill="#060a18"
+          fill="var(--color-paper)"
           fontSize="9"
           fontFamily="var(--font-mono)"
           fontWeight="700"

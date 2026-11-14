@@ -20,7 +20,7 @@ export function StatePill({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-semibold",
+        "inline-flex items-center gap-2 rounded-full border border-current/15 px-3 py-1.5 text-sm font-medium",
         TONE_SOFT[tone],
         TONE_TEXT[tone],
         className,

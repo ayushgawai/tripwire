@@ -18,7 +18,7 @@ export function ConnectionBadge({ status, className }: { status: ConnectionStatu
     <span
       title={status === "replay" ? "Local fixture replay — not live inference" : undefined}
       className={cn(
-        "inline-flex items-center gap-2 rounded-full border border-line bg-card px-3 py-1 text-xs font-semibold uppercase tracking-wider text-ink-soft",
+        "inline-flex items-center gap-2 rounded-full border border-line bg-card/70 px-3 py-1.5 text-xs font-medium tracking-wide text-ink-soft",
         status === "replay" && "border-ai/40 text-ai",
         className,
       )}

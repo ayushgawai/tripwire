@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   description: "A pause when it matters. Tripwire brings a trusted person into risky calls.",
 };
 
-export const viewport: Viewport = { themeColor: "#f7f4ee", width: "device-width", initialScale: 1 };
+export const viewport: Viewport = { themeColor: "#07080B", width: "device-width", initialScale: 1 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

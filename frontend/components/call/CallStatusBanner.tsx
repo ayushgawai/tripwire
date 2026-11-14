@@ -70,7 +70,7 @@ export function CallStatusBanner({
       )}
     >
       <Pulse tone={tone === "danger" ? "danger" : tone === "safe" ? "safe" : tone === "watch" ? "watch" : tone === "family" ? "family" : tone === "ai" ? "ai" : "muted"} size={8} />
-      <span className="flex-1 truncate">{label}</span>
+      <span className="flex-1 min-w-0">{label}</span>
 
       {fixtureMode && (
         <span

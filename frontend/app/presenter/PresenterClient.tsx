@@ -45,7 +45,7 @@ export default function PresenterClient() {
   const high = view.latestDecision?.risk === "high";
 
   return (
-    <div className="theme-dark min-h-screen text-ink">
+    <div className="presenter-page theme-dark min-h-screen text-ink">
       {(params.replay || view.demoReplay) && <ReplayRibbon />}
       {/* ---------- Top bar ---------- */}
       <header className="sticky top-0 z-40 border-b border-line bg-card/80 backdrop-blur">
@@ -98,7 +98,7 @@ export default function PresenterClient() {
         {/* ---------- Hero row: state info + routing diagram ---------- */}
         <section
           className={cn(
-            "relative overflow-hidden rounded-2xl border p-5 transition-colors duration-700",
+            "presenter-hero relative overflow-hidden rounded-[28px] border p-6 transition-colors duration-700",
             view.takeover === "failed" ? "border-danger/50 bg-danger-soft"
               : view.state === "assistant_active" ? "border-danger/30 bg-danger-soft"
               : view.state === "protecting" ? "border-watch/30 bg-watch-soft"
@@ -110,7 +110,7 @@ export default function PresenterClient() {
             {/* Left: state headline + timeline */}
             <div className="flex flex-col justify-center">
               <p className="text-[11px] font-medium text-ink-faint">Session state</p>
-              <h1 key={view.state + view.takeover} className="mt-1 font-display text-4xl font-semibold tracking-tight lg:text-5xl">
+              <h1 key={view.state + view.takeover} className="mt-2 font-display text-5xl font-normal leading-[1.05] tracking-tight lg:text-7xl animate-rise">
                 {view.takeover === "failed" && view.state !== "family_joined" ? "Takeover failed" : meta.label}
               </h1>
               <p className="mt-2 max-w-md text-[13px] text-ink-soft leading-relaxed">
@@ -122,7 +122,7 @@ export default function PresenterClient() {
             </div>
             {/* Right: hero routing diagram */}
             <div className="flex flex-col justify-center">
-              <div className="mx-auto w-full max-w-[560px] rounded-xl border border-line/60 bg-paper/60 p-4">
+              <div className="mx-auto w-full max-w-[560px] rounded-[20px] border border-line/60 bg-paper/30 p-4">
                 <RoutingDiagram view={view} />
               </div>
             </div>
@@ -149,7 +149,7 @@ export default function PresenterClient() {
           {/* ---------- Risk ---------- */}
           <Card
             title="Risk decision"
-            aside={high ? <span className="rounded-full bg-danger px-2 py-0.5 text-[10px] font-bold text-white uppercase tracking-wider">High</span> : null}
+            aside={high ? <span className="rounded-full button-danger px-2 py-0.5 text-[10px] font-bold text-white uppercase tracking-wider">High</span> : null}
           >
             <RiskPanel decision={view.latestDecision} history={view.decisions} />
           </Card>

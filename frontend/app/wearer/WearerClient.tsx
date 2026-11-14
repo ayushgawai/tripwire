@@ -60,7 +60,7 @@ function SceneIcon({ icon, tone }: { icon: Scene["icon"]; tone: Scene["tone"] })
   const common = "h-14 w-14";
   return (
     <span className={cn("relative flex h-28 w-28 items-center justify-center rounded-full bg-card shadow-sm", ICON_COLOR[tone])}>
-      {tone !== "muted" && <span className="absolute inset-0 rounded-full bg-current opacity-20 animate-pulse-ring" />}
+      {tone !== "muted" && <span className="absolute -inset-4 rounded-full bg-current opacity-10 blur-xl" />}
       <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         {icon === "shield" && (<><path d="M12 3l7 3v5c0 4.5-3 8.4-7 10-4-1.6-7-5.5-7-10V6l7-3z" /><path d="M9 12l2 2 4-4" /></>)}
         {icon === "pause" && (<><circle cx="12" cy="12" r="9" /><path d="M10 9v6M14 9v6" /></>)}
@@ -109,18 +109,21 @@ export default function WearerClient() {
   }, [actions.join, wearerConnected, transcription.start]);
 
   return (
-    <div className={cn("min-h-screen transition-colors duration-700", scene.bg)}>
+    <div className={cn("wearer-page min-h-screen transition-colors duration-700", scene.bg)}>
       {(params.replay || view.demoReplay) && <ReplayRibbon />}
       <header className="mx-auto flex max-w-3xl items-center justify-between px-6 py-5">
         <Logo />
-        <ConnectionBadge status={status} />
+        <div className="flex flex-wrap justify-end items-center gap-3">
+          <span className="vexo-chip"><span aria-hidden="true" />Vexo band</span>
+          <ConnectionBadge status={status} />
+        </div>
       </header>
 
       <main className="mx-auto flex max-w-3xl flex-col items-center px-6 pb-16 pt-6 text-center">
-        <div key={scene.key} className={cn("flex flex-col items-center gap-8 animate-rise", scene.key === "assistant" && "[&>span]:animate-shake")}>
+        <div key={scene.key} className={cn("flex flex-col items-center gap-8 animate-rise", scene.key === "assistant" && "wearer-warning")}>
           <SceneIcon icon={scene.icon} tone={scene.tone} />
           <div className="space-y-4">
-            <h1 className="font-display text-5xl font-semibold leading-tight tracking-tight sm:text-6xl">{scene.title}</h1>
+            <h1 className="font-display text-[56px] font-normal leading-[1.08] tracking-tight sm:text-7xl">{scene.title}</h1>
             <p className="mx-auto max-w-xl text-2xl leading-relaxed text-ink-soft">{scene.body}</p>
           </div>
         </div>

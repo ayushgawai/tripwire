@@ -35,7 +35,7 @@ export function CallRoom({
     <div
       data-testid="call-room"
       data-role={view.role}
-      className="flex w-full flex-col gap-3 p-4"
+      className="call-room flex w-full flex-col gap-4 p-5"
     >
       <CallStatusBanner
         status={view.uiStatus}

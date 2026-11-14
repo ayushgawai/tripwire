@@ -85,7 +85,7 @@ export function FamilyJoinPanel({
           type="button"
           onClick={onJoin}
           disabled={joining}
-          className="mt-4 inline-flex min-w-[8rem] select-none items-center justify-center gap-2 rounded-xl bg-safe px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-safe/30 disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-4 inline-flex min-w-[8rem] select-none items-center justify-center gap-2 rounded-xl bg-family px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-champagne/50 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {joining ? "Joining…" : "Join call"}
         </button>

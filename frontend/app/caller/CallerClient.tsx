@@ -67,7 +67,7 @@ export default function CallerClient() {
   }, [view.lastAssistantUtterance]);
 
   return (
-    <div className="theme-dark min-h-screen bg-paper text-ink">
+    <div className="caller-page theme-dark min-h-screen bg-paper text-ink">
       {(params.replay || view.demoReplay) && <ReplayRibbon />}
 
       {/* Top bar */}
@@ -125,7 +125,7 @@ export default function CallerClient() {
 
           {/* Status line */}
           <div className="text-center">
-            <h1 className="text-2xl font-semibold text-ink">
+            <h1 className="font-display text-4xl font-normal text-ink">
               {ended ? "Call ended" : aiOn ? "Tripwire assistant" : callee}
             </h1>
             <p className={cn(
@@ -139,7 +139,7 @@ export default function CallerClient() {
           {/* Tripwire AI is speaking — animated cyan banner */}
           {aiOn && view.lastAssistantUtterance && (
             <div className="w-full animate-rise">
-              <div className="flex items-center gap-3 rounded-2xl border border-cyan/30 bg-cyan-soft/60 px-4 py-3 shadow-[0_0_30px_-8px_rgba(59,232,217,0.25)]">
+              <div className="flex items-center gap-3 rounded-2xl border border-cyan/30 bg-cyan-soft/60 px-4 py-3 backdrop-blur-xl shadow-lg shadow-ai/10">
                 {/* Voice wave animation */}
                 <div className="flex items-center gap-[3px] h-5 shrink-0" aria-hidden="true">
                   {[0, 1, 2, 3, 4].map((i) => (
@@ -198,7 +198,7 @@ export default function CallerClient() {
             accessToken={params.token}
           />
           {!ended && (
-            <Button variant="danger" size="lg" className="w-full" onClick={() => void actions.end()}>
+            <Button variant="danger" size="lg" className="w-full rounded-full" onClick={() => void actions.end()}>
               Hang up
             </Button>
           )}

@@ -85,7 +85,7 @@ export default function FamilyClient() {
   const ended = view.state === "ended";
 
   return (
-    <div className={cn("min-h-screen transition-colors duration-700", alert && !view.familyJoined && !ended ? "bg-danger-soft/60" : "bg-paper")}>
+    <div className={cn("family-page min-h-screen transition-colors duration-700", alert && !view.familyJoined && !ended ? "bg-danger-soft/60" : "bg-paper")}>
       {(params.replay || view.demoReplay) && <ReplayRibbon />}
       <header className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-5 py-5">
         <div className="flex items-center gap-3">
@@ -107,7 +107,7 @@ export default function FamilyClient() {
             <section
               className={cn(
                 "relative overflow-hidden rounded-[2rem] border p-6 sm:p-8 animate-rise",
-                view.familyJoined ? "border-family/30 bg-card" : "border-danger/30 bg-card shadow-[0_20px_60px_-20px_rgba(210,63,49,0.35)]",
+                view.familyJoined ? "border-family/30 bg-card" : "border-danger/30 border-t-2 bg-card shadow-xl shadow-danger/5",
               )}
             >
               <div className="flex items-start gap-4">
@@ -120,7 +120,7 @@ export default function FamilyClient() {
                   <p className={cn("text-xs font-bold uppercase tracking-[0.18em]", view.familyJoined ? "text-family" : "text-danger")}>
                     {view.familyJoined ? "You're on the call" : "Tripwire alert"} {alert.timestamp && `· ${timeOf(alert.timestamp)}`}
                   </p>
-                  <h1 className="mt-1 font-display text-3xl font-semibold leading-tight sm:text-4xl">
+                  <h1 className="mt-1 font-display text-4xl font-normal leading-tight sm:text-5xl">
                     {view.familyJoined ? `You're helping ${wearer} now` : `${wearer} may be in a risky call`}
                   </h1>
                   <p className="mt-3 text-lg leading-relaxed text-ink-soft">{alert.summary}</p>
@@ -246,7 +246,7 @@ function StandBy({ wearer, soundOn, onEnableSound, ended }: { wearer: string; so
         </p>
       </div>
       {!ended && (
-        <Button variant={soundOn ? "outline" : "primary"} size="lg" onClick={onEnableSound} disabled={soundOn}>
+        <Button variant="outline" size="lg" onClick={onEnableSound} disabled={soundOn}>
           {soundOn ? "Sound alerts on" : "Turn on sound alerts"}
         </Button>
       )}

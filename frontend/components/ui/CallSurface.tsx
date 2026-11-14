@@ -65,7 +65,7 @@ export function CallSurface({
   // Full call panel when we have session identity + credentials (or can join).
   if (sessionId && accessToken && !replay) {
     return (
-      <div className={cn("rounded-2xl border border-line bg-card shadow-sm", className)}>
+      <div className={cn("call-surface surface-card rounded-[20px] border border-line bg-card shadow-sm", className)}>
         <CallPanel
           role={role}
           sessionId={sessionId}
@@ -82,7 +82,8 @@ export function CallSurface({
   }
 
   return (
-    <div className={cn("rounded-2xl border border-dashed border-line bg-paper/60 p-5", className)}>
+    <div className={cn("call-surface surface-card rounded-[20px] border border-line bg-card/60 p-5", className)}>
+      <p className="mb-3 text-xs tracking-[0.22em] uppercase text-ink-soft">Call</p>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-ink">
