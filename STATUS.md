@@ -13,15 +13,18 @@ Required flow: suspicious call → detection → AI takeover → family alert �
 
 ## Blockers
 - 2026-11-14 · **All provider keys missing.** Naman has no `.env` yet, so Daily, Deepgram, Gemini and ElevenLabs are all BLOCKED (`docs/setup.md` §6). Owner: Naman.
+- 2026-11-14 · **`backend/calls/` and `frontend/components/call/` not pushed yet.** Without them there is no real audio takeover; the demo runs on the `DEMO_MODE` stand-in. The frontend never sends `wearer_audio_blocked`; Manav's call component must send it. Owner: Manav.
 
 ## Ayush: coordinator, shared contracts, demo, integration
 - [x] `.gitignore` (keeps `.env` out of git)
 - [x] `shared/COORDINATOR.md`, `shared/contracts.json`, `shared/example_event.json`, `shared/example_risk.json`
 - [x] `backend/session.py`: state machine, event sequence, role tokens, idempotent takeover hooks. Proof: `.venv/bin/pytest -q backend/tests/test_session.py` → 27 passed
 - [x] `backend/requirements.txt`, `Makefile`, `README.md`
-- [x] `demo/script.md`, `demo/checklist.md`, `demo/smoke.py` (syntax-checked only so far)
-- [ ] `backend/app.py`: HTTP and WebSocket routes, transcript → analyzer → takeover wiring. In progress.
-- [ ] `make smoke` passes against a live backend (needs Pratham's analyzer)
+- [x] `demo/script.md`, `demo/checklist.md`, `demo/smoke.py`
+- [x] `backend/app.py`: HTTP and WebSocket routes, transcript → analyzer → takeover wiring. Proof: `.venv/bin/pytest -q backend/tests` → 42 passed
+- [x] `make smoke` against a live backend with Pratham's real analyzer → 23/23 pass
+- [x] Integrated Pratham's `backend/intelligence` and Dev's frontend (`npm run build` OK)
+- [x] `DEMO_MODE=true` stand-in for `backend/calls`, used only while Manav's module is missing: takeover goes active after 1.5 s, family `/join` triggers family_joined, and every event is labelled demo replay. Proof: full HTTP flow monitoring → protecting → assistant_active → family_joined → reconnect → ended (410)
 - [ ] Merge all modules; full scenario works 3 times in a row
 - [ ] 90 s video plus one uncut proof recording
 

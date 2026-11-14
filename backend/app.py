@@ -53,9 +53,43 @@ def _load_calls() -> Any | None:
             mod = sys.modules["backend.calls"]
         required = ("create_join_credentials", "start_takeover", "stop_assistant", "end_call")
         if not all(hasattr(mod, f) for f in required):
-            return None
+            return _demo_calls_or_none()
         return mod
     except ImportError:
+        return _demo_calls_or_none()
+
+
+def _demo_calls_or_none() -> Any | None:
+    # ponytail: DEMO_MODE-only stand-in until Manav's backend/calls lands. No real audio routing;
+    # every event carries demo_replay=true so UIs label it. Delete once backend/calls exists.
+    return _DemoCalls if os.environ.get("DEMO_MODE", "false").lower() == "true" else None
+
+
+class _DemoCalls:
+    @staticmethod
+    async def create_join_credentials(session_id: str, role: str) -> dict:
+        if role == "family":
+            async def _join() -> None:
+                await asyncio.sleep(0.5)
+                await on_family_joined(session_id, {"role": "family", "demo": True})
+            asyncio.create_task(_join())
+        return {"provider": "demo", "role": role, "room_url": None, "token": None, "demo": True}
+
+    @staticmethod
+    async def start_takeover(session_id: str, decision: dict) -> dict:
+        async def _ready() -> None:
+            await asyncio.sleep(1.5)
+            await session.mark_wearer_audio_blocked(session_id)
+            await session.mark_assistant_ready(session_id)
+        asyncio.create_task(_ready())
+        return {"accepted": True, "demo": True}
+
+    @staticmethod
+    async def stop_assistant(session_id: str) -> None:
+        return None
+
+    @staticmethod
+    async def end_call(session_id: str) -> None:
         return None
 
 
