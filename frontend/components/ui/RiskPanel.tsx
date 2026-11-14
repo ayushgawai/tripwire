@@ -2,32 +2,58 @@ import { reasonLabel } from "@/app/_lib/labels";
 import type { RiskDecision, RiskLevel } from "@/app/_lib/types";
 import { cn } from "./cn";
 
-const LEVELS: { id: RiskLevel; label: string; tone: string; soft: string }[] = [
-  { id: "low", label: "Low", tone: "bg-safe", soft: "text-safe" },
-  { id: "review", label: "Review", tone: "bg-watch", soft: "text-watch" },
-  { id: "high", label: "High", tone: "bg-danger", soft: "text-danger" },
+const LEVELS: { id: RiskLevel; label: string; tone: string }[] = [
+  { id: "low", label: "Low", tone: "bg-safe" },
+  { id: "review", label: "Review", tone: "bg-watch" },
+  { id: "high", label: "High", tone: "bg-danger" },
 ];
 
 const ACTION_LABEL = { none: "No action", alert: "Alert family", takeover: "Take over call" } as const;
 
-export function RiskMeter({ risk }: { risk: RiskLevel | null }) {
+/** Horizontal threat gauge that animates on mount (keyed by decision ID for re-animation). */
+export function ThreatGauge({ risk }: { risk: RiskLevel | null }) {
   const idx = risk ? LEVELS.findIndex((l) => l.id === risk) : -1;
   return (
-    <div className="grid grid-cols-3 gap-1.5" role="meter" aria-valuetext={risk ?? "none"}>
-      {LEVELS.map((l, i) => (
-        <div key={l.id} className="flex flex-col gap-1.5">
-          <div
-            className={cn(
-              "h-2.5 rounded-full transition-all duration-500",
-              i <= idx ? l.tone : "bg-line",
-              i === idx && risk === "high" && "shadow-[0_0_18px_var(--color-danger)]",
-            )}
-          />
-          <span className={cn("text-[11px] font-semibold uppercase tracking-wider", i === idx ? l.soft : "text-ink-faint")}>
-            {l.label}
-          </span>
-        </div>
-      ))}
+    <div className="relative h-3 w-full rounded-full bg-line overflow-hidden" role="meter" aria-valuetext={risk ?? "none"}>
+      {/* Background segments */}
+      <div className="absolute inset-0 flex">
+        {LEVELS.map((l, i) => (
+          <div key={l.id} className={cn("flex-1 border-r border-paper/20 last:border-r-0", l.tone, "opacity-15")} />
+        ))}
+      </div>
+      {/* Animated fill */}
+      <div
+        className="absolute inset-y-0 left-0 rounded-full animate-gauge-fill"
+        style={{
+          width: risk ? `${((idx + 1) / LEVELS.length) * 100}%` : "0%",
+          backgroundColor:
+            risk === "high"
+              ? "var(--color-danger)"
+              : risk === "review"
+                ? "var(--color-watch)"
+                : risk === "low"
+                  ? "var(--color-safe)"
+                  : "transparent",
+          boxShadow: risk === "high" ? "0 0 18px var(--color-danger)" : "none",
+        }}
+      />
+      {/* Tick marks */}
+      <div className="absolute inset-0 flex px-px">
+        {LEVELS.map((l, i) => (
+          <div key={l.id} className="flex-1 border-r border-paper/30 last:border-r-0" />
+        ))}
+      </div>
+      {/* Level label overlay */}
+      {risk && (
+        <span
+          className={cn(
+            "absolute inset-y-0 flex items-center justify-end pr-2 text-[10px] font-bold uppercase tracking-wider",
+            risk === "high" ? "text-danger" : risk === "review" ? "text-watch" : "text-safe",
+          )}
+        >
+          {LEVELS[idx].label}
+        </span>
+      )}
     </div>
   );
 }
@@ -49,17 +75,18 @@ export function RiskPanel({ decision, history }: { decision: RiskDecision | null
   if (!decision) {
     return (
       <div className="space-y-4">
-        <RiskMeter risk={null} />
+        <ThreatGauge risk={null} />
         <p className="text-sm text-ink-faint">No decision yet. Caller and wearer final transcripts are analyzed as they arrive.</p>
       </div>
     );
   }
   return (
     <div className="space-y-4">
-      <RiskMeter risk={decision.risk} />
+      {/* Key forces re-mount so the gauge animates on each new decision */}
+      <ThreatGauge key={decision.decision_id} risk={decision.risk} />
       <p className="text-[15px] leading-relaxed text-ink">{decision.summary || "—"}</p>
       <ReasonChips reasons={decision.reasons} />
-      <div className="flex items-center justify-between border-t border-line pt-3 text-xs text-ink-faint">
+      <div className="flex items-center justify-between border-t border-line pt-3 text-xs text-ink-faint tabular-nums">
         <span>
           Recommended: <b className="text-ink-soft">{ACTION_LABEL[decision.recommended_action]}</b>
         </span>

@@ -2,7 +2,7 @@
 import { cn } from "./cn";
 
 type Variant = "primary" | "danger" | "family" | "ghost" | "outline";
-type Size = "md" | "lg" | "xl";
+type Size = "sm" | "md" | "lg" | "xl";
 
 const VARIANT: Record<Variant, string> = {
   primary: "bg-ink text-paper hover:opacity-90",
@@ -12,6 +12,7 @@ const VARIANT: Record<Variant, string> = {
   outline: "border border-line bg-card text-ink hover:border-ink-faint",
 };
 const SIZE: Record<Size, string> = {
+  sm: "h-8 px-3 text-xs rounded-lg",
   md: "h-10 px-4 text-sm rounded-xl",
   lg: "h-12 px-6 text-base rounded-2xl",
   xl: "h-16 px-8 text-xl rounded-3xl",

@@ -16,8 +16,10 @@ export function StateTimeline({
 }) {
   const current = ORDER.indexOf(state);
   const at = (s: SessionState) => [...timeline].reverse().find((t) => t.state === s)?.at;
+
   return (
-    <ol className="relative grid grid-cols-5 gap-2">
+    <ol className="relative grid grid-cols-5 gap-2" aria-label="Session state timeline">
+      {/* Track */}
       <div className="absolute left-[10%] right-[10%] top-[11px] h-0.5 bg-line" aria-hidden />
       <div
         className="absolute left-[10%] top-[11px] h-0.5 bg-ink transition-all duration-700"
@@ -48,10 +50,10 @@ export function StateTimeline({
               {now && <Pulse tone={meta.tone} still={s === "ended"} size={8} />}
               {isFail && !now && <span className="text-[11px] font-bold text-danger">!</span>}
             </span>
-            <span className={cn("text-[11px] font-semibold leading-tight", now ? "text-ink" : done ? "text-ink-soft" : "text-ink-faint", isFail && "text-danger")}>
+            <span className={cn("text-[11px] font-medium leading-tight tabular-nums", now ? "text-ink" : done ? "text-ink-soft" : "text-ink-faint", isFail && "text-danger")}>
               {isFail ? "Takeover failed" : meta.label}
             </span>
-            <span className="font-mono text-[10px] text-ink-faint">{done || now ? timeOf(at(s)) : ""}</span>
+            <span className="font-mono text-[10px] text-ink-faint tabular-nums">{done || now ? timeOf(at(s)) : ""}</span>
           </li>
         );
       })}
