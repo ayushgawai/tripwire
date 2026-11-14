@@ -1,0 +1,52 @@
+{
+  "name": "bank_impersonation",
+  "description": "Fake bank fraud department: threat plus a request for a verification code.",
+  "session_id": "fixture_bank_impersonation",
+  "expected": {
+    "risk": "high",
+    "recommended_action": "takeover",
+    "reasons_include": [
+      "impersonation",
+      "threat",
+      "credential_request"
+    ]
+  },
+  "events": [
+    {
+      "event_id": "evt_001",
+      "session_id": "fixture_bank_impersonation",
+      "sequence": 1,
+      "type": "transcript.final",
+      "timestamp": "2026-11-14T20:00:04Z",
+      "payload": {
+        "utterance_id": "utt_001",
+        "speaker": "caller",
+        "text": "This is the fraud department at your bank."
+      }
+    },
+    {
+      "event_id": "evt_002",
+      "session_id": "fixture_bank_impersonation",
+      "sequence": 2,
+      "type": "transcript.final",
+      "timestamp": "2026-11-14T20:00:08Z",
+      "payload": {
+        "utterance_id": "utt_002",
+        "speaker": "caller",
+        "text": "Your account will be frozen. Read me the verification code we just sent you."
+      }
+    },
+    {
+      "event_id": "evt_003",
+      "session_id": "fixture_bank_impersonation",
+      "sequence": 3,
+      "type": "transcript.final",
+      "timestamp": "2026-11-14T20:00:12Z",
+      "payload": {
+        "utterance_id": "utt_003",
+        "speaker": "wearer",
+        "text": "Okay, give me a second."
+      }
+    }
+  ]
+}

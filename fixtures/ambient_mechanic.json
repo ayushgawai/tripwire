@@ -1,0 +1,28 @@
+{
+  "name": "ambient_mechanic",
+  "description": "Optional ambient demo: pressure and secrecy from someone in the room. Alert only, nobody can be muted.",
+  "session_id": "fixture_ambient_mechanic",
+  "expected": {
+    "risk": "high",
+    "recommended_action": "alert",
+    "reasons_include": [
+      "large_amount",
+      "urgency",
+      "secrecy"
+    ]
+  },
+  "events": [
+    {
+      "event_id": "evt_001",
+      "session_id": "fixture_ambient_mechanic",
+      "sequence": 1,
+      "type": "transcript.final",
+      "timestamp": "2026-11-14T20:00:04Z",
+      "payload": {
+        "utterance_id": "utt_001",
+        "speaker": "ambient",
+        "text": "The oil change is $2,000. Pay now and do not call your daughter."
+      }
+    }
+  ]
+}

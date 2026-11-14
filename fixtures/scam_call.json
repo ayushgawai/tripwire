@@ -1,0 +1,100 @@
+{
+  "name": "scam_call",
+  "description": "The 90-second demo script: gift cards plus urgency plus secrecy. One takeover.",
+  "session_id": "demo_001",
+  "expected": {
+    "risk": "high",
+    "recommended_action": "takeover",
+    "reasons_include": [
+      "gift_card_request",
+      "urgency",
+      "secrecy"
+    ]
+  },
+  "events": [
+    {
+      "event_id": "evt_001",
+      "session_id": "demo_001",
+      "sequence": 1,
+      "type": "transcript.final",
+      "timestamp": "2026-11-14T20:00:04Z",
+      "payload": {
+        "utterance_id": "utt_001",
+        "speaker": "caller",
+        "text": "Grandma, I am in trouble. Buy $500 in gift cards now. Please do not tell anyone."
+      }
+    },
+    {
+      "event_id": "evt_002",
+      "session_id": "demo_001",
+      "sequence": 2,
+      "type": "transcript.final",
+      "timestamp": "2026-11-14T20:00:08Z",
+      "payload": {
+        "utterance_id": "utt_002",
+        "speaker": "wearer",
+        "text": "Should I call your mother?"
+      }
+    },
+    {
+      "event_id": "evt_003",
+      "session_id": "demo_001",
+      "sequence": 3,
+      "type": "transcript.final",
+      "timestamp": "2026-11-14T20:00:12Z",
+      "payload": {
+        "utterance_id": "utt_003",
+        "speaker": "caller",
+        "text": "No. There is no time."
+      }
+    },
+    {
+      "event_id": "evt_004",
+      "session_id": "demo_001",
+      "sequence": 4,
+      "type": "transcript.final",
+      "timestamp": "2026-11-14T20:00:16Z",
+      "payload": {
+        "utterance_id": "utt_004",
+        "speaker": "assistant",
+        "text": "I am Tripwire, an AI assistant. This conversation has been paused for family verification. Please explain your request."
+      }
+    },
+    {
+      "event_id": "evt_005",
+      "session_id": "demo_001",
+      "sequence": 5,
+      "type": "transcript.final",
+      "timestamp": "2026-11-14T20:00:20Z",
+      "payload": {
+        "utterance_id": "utt_005",
+        "speaker": "caller",
+        "text": "It has to happen now."
+      }
+    },
+    {
+      "event_id": "evt_006",
+      "session_id": "demo_001",
+      "sequence": 6,
+      "type": "transcript.final",
+      "timestamp": "2026-11-14T20:00:24Z",
+      "payload": {
+        "utterance_id": "utt_006",
+        "speaker": "assistant",
+        "text": "A family member will verify the request before anyone acts."
+      }
+    },
+    {
+      "event_id": "evt_007",
+      "session_id": "demo_001",
+      "sequence": 7,
+      "type": "transcript.final",
+      "timestamp": "2026-11-14T20:00:28Z",
+      "payload": {
+        "utterance_id": "utt_007",
+        "speaker": "family",
+        "text": "Mom, pause. I will call him on the number we already know."
+      }
+    }
+  ]
+}

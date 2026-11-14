@@ -1,0 +1,50 @@
+{
+  "name": "ambiguous_charge",
+  "description": "Check 2: a large price alone is review at most, never takeover.",
+  "session_id": "fixture_ambiguous_charge",
+  "expected": {
+    "risk": "review",
+    "recommended_action": "none",
+    "reasons_include": [
+      "large_amount"
+    ]
+  },
+  "events": [
+    {
+      "event_id": "evt_001",
+      "session_id": "fixture_ambiguous_charge",
+      "sequence": 1,
+      "type": "transcript.final",
+      "timestamp": "2026-11-14T20:00:04Z",
+      "payload": {
+        "utterance_id": "utt_001",
+        "speaker": "caller",
+        "text": "Hello, this is the auto shop calling about your car."
+      }
+    },
+    {
+      "event_id": "evt_002",
+      "session_id": "fixture_ambiguous_charge",
+      "sequence": 2,
+      "type": "transcript.final",
+      "timestamp": "2026-11-14T20:00:08Z",
+      "payload": {
+        "utterance_id": "utt_002",
+        "speaker": "caller",
+        "text": "The service costs $2,000."
+      }
+    },
+    {
+      "event_id": "evt_003",
+      "session_id": "fixture_ambiguous_charge",
+      "sequence": 3,
+      "type": "transcript.final",
+      "timestamp": "2026-11-14T20:00:12Z",
+      "payload": {
+        "utterance_id": "utt_003",
+        "speaker": "wearer",
+        "text": "Thank you, I will think about it."
+      }
+    }
+  ]
+}

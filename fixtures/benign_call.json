@@ -1,0 +1,35 @@
+{
+  "name": "benign_call",
+  "description": "Check 1: an ordinary call. No takeover.",
+  "session_id": "fixture_benign_call",
+  "expected": {
+    "risk": "low",
+    "recommended_action": "none"
+  },
+  "events": [
+    {
+      "event_id": "evt_001",
+      "session_id": "fixture_benign_call",
+      "sequence": 1,
+      "type": "transcript.final",
+      "timestamp": "2026-11-14T20:00:04Z",
+      "payload": {
+        "utterance_id": "utt_001",
+        "speaker": "caller",
+        "text": "Hi Grandma, it's Sam. Please call me back tomorrow."
+      }
+    },
+    {
+      "event_id": "evt_002",
+      "session_id": "fixture_benign_call",
+      "sequence": 2,
+      "type": "transcript.final",
+      "timestamp": "2026-11-14T20:00:08Z",
+      "payload": {
+        "utterance_id": "utt_002",
+        "speaker": "wearer",
+        "text": "Of course, sweetheart. Talk soon."
+      }
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "name": "duplicate_transcripts",
+  "description": "Check 6: repeated utterance IDs are ignored and produce the same decision.",
+  "session_id": "demo_001",
+  "expected": {
+    "risk": "high",
+    "recommended_action": "takeover",
+    "reasons_include": [
+      "gift_card_request",
+      "urgency",
+      "secrecy"
+    ]
+  },
+  "events": [
+    {
+      "event_id": "evt_001",
+      "session_id": "demo_001",
+      "sequence": 1,
+      "type": "transcript.final",
+      "timestamp": "2026-11-14T20:00:04Z",
+      "payload": {
+        "utterance_id": "utt_001",
+        "speaker": "caller",
+        "text": "Buy gift cards now and do not tell your daughter."
+      }
+    },
+    {
+      "event_id": "evt_002",
+      "session_id": "demo_001",
+      "sequence": 2,
+      "type": "transcript.final",
+      "timestamp": "2026-11-14T20:00:08Z",
+      "payload": {
+        "utterance_id": "utt_001",
+        "speaker": "caller",
+        "text": "Buy gift cards now and do not tell your daughter."
+      }
+    },
+    {
+      "event_id": "evt_003",
+      "session_id": "demo_001",
+      "sequence": 3,
+      "type": "transcript.final",
+      "timestamp": "2026-11-14T20:00:12Z",
+      "payload": {
+        "utterance_id": "utt_001",
+        "speaker": "caller",
+        "text": "Buy gift cards now and do not tell your daughter."
+      }
+    }
+  ]
+}

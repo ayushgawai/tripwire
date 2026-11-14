@@ -1,0 +1,47 @@
+{
+  "name": "non_analyzed_speakers",
+  "description": "Assistant and family speech is excluded from risk detection, even when it mentions money.",
+  "session_id": "fixture_non_analyzed_speakers",
+  "expected": {
+    "risk": "low",
+    "recommended_action": "none"
+  },
+  "events": [
+    {
+      "event_id": "evt_001",
+      "session_id": "fixture_non_analyzed_speakers",
+      "sequence": 1,
+      "type": "transcript.final",
+      "timestamp": "2026-11-14T20:00:04Z",
+      "payload": {
+        "utterance_id": "utt_001",
+        "speaker": "caller",
+        "text": "Hi Mom, how was your day?"
+      }
+    },
+    {
+      "event_id": "evt_002",
+      "session_id": "fixture_non_analyzed_speakers",
+      "sequence": 2,
+      "type": "transcript.final",
+      "timestamp": "2026-11-14T20:00:08Z",
+      "payload": {
+        "utterance_id": "utt_002",
+        "speaker": "family",
+        "text": "Don't send any money right now, and don't tell anyone your bank account number."
+      }
+    },
+    {
+      "event_id": "evt_003",
+      "session_id": "fixture_non_analyzed_speakers",
+      "sequence": 3,
+      "type": "transcript.final",
+      "timestamp": "2026-11-14T20:00:12Z",
+      "payload": {
+        "utterance_id": "utt_003",
+        "speaker": "assistant",
+        "text": "I will not buy gift cards now, and I cannot keep this secret."
+      }
+    }
+  ]
+}
