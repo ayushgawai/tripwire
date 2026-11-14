@@ -13,9 +13,9 @@ ALLOWED_TRANSITIONS: dict[SessionState, frozenset[SessionState]] = {
     SessionState.PROTECTING: frozenset(
         {
             SessionState.ASSISTANT_ACTIVE,
+            # Family may join after alert even if activation was incomplete.
+            SessionState.FAMILY_JOINED,
             SessionState.ENDED,
-            # Failure path: stay recoverable via end; failed takeover stays protecting
-            # until end, or returns to monitoring only via explicit controller reset.
         }
     ),
     SessionState.ASSISTANT_ACTIVE: frozenset(

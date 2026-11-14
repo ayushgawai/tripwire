@@ -10,23 +10,20 @@ import os
 from typing import Any
 
 from .adapters.session_bridge import InviteAccessValidator, SessionBridge
-from .errors import (
-    DuplicateOperationError,
-    RolePermissionError,
-    SessionAccessError,
-    SessionEndedError,
-)
+from .errors import RolePermissionError, SessionAccessError
 from .factory import create_call_provider, create_voice_worker, fixture_mode_active
+from .family_join_controller import FamilyJoinController
 from .models import (
     CallSessionSnapshot,
     ParticipantRecord,
     ParticipantRole,
-    ProviderCredentials,
+    RoutingConfirmation,
     SessionState,
     utc_now_iso,
 )
 from .provider_interface import CallProvider, VoiceWorker
 from .state_machine import CallStateMachine
+from .takeover_controller import TakeoverController
 
 
 class CallSessionManager:
@@ -49,6 +46,8 @@ class CallSessionManager:
         self._workers: dict[str, VoiceWorker] = {}
         self._invite_tokens: dict[str, dict[str, str]] = {}
         self._ttl = int(os.getenv("CALL_TOKEN_TTL_SECONDS", "600"))
+        self.takeover = TakeoverController(self)
+        self.family = FamilyJoinController(self)
 
     def _get(self, session_id: str) -> CallSessionSnapshot:
         if session_id not in self._sessions:
@@ -213,3 +212,46 @@ class CallSessionManager:
     def issue_demo_access_bundle(self, session_id: str) -> dict[str, str]:
         """Convenience for fixture demos — returns role invite tokens (server/demo only)."""
         return self.get_invite_tokens(session_id)
+
+    async def start_takeover(
+        self, session_id: str, *, decision_id: str, **kwargs: Any
+    ) -> dict[str, Any]:
+        return await self.takeover.start_takeover(
+            session_id, decision_id=decision_id, **kwargs
+        )
+
+    async def confirm_routing(
+        self, session_id: str, confirmation: RoutingConfirmation
+    ) -> dict[str, Any]:
+        return await self.takeover.confirm_routing(session_id, confirmation)
+
+    async def start_voice_worker(self, session_id: str) -> dict[str, Any]:
+        return await self.takeover.start_voice_worker(session_id)
+
+    async def confirm_family_joined(
+        self,
+        session_id: str,
+        *,
+        access_token: str,
+        provider_participant_id: str,
+        user_id_from_provider: str | None = None,
+    ) -> dict[str, Any]:
+        return await self.family.on_family_provider_joined(
+            session_id,
+            access_token=access_token,
+            provider_participant_id=provider_participant_id,
+            user_id_from_provider=user_id_from_provider,
+        )
+
+    async def reconnect_wearer(
+        self, session_id: str, *, access_token: str
+    ) -> dict[str, Any]:
+        return await self.family.reconnect_wearer(
+            session_id, access_token=access_token
+        )
+
+    def enable_family_join_credentials(self, session_id: str) -> None:
+        """Allow family /join after alert without requiring assistant_active yet."""
+        snap = self._get(session_id)
+        snap.family_alert_sent = True
+        snap.updated_at = utc_now_iso()
