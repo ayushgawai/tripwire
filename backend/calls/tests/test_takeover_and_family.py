@@ -128,6 +128,63 @@ async def test_incomplete_routing_fails_takeover(manager: CallSessionManager) ->
 
 
 @pytest.mark.asyncio
+async def test_failed_takeover_cannot_activate_on_later_routing(
+    manager: CallSessionManager,
+) -> None:
+    """Critical: worker ready then failed routing must not later publish takeover.active."""
+    await _bootstrap(manager)
+    await manager.start_takeover(
+        "demo_001", decision_id="d1", risk="high", recommended_action="takeover"
+    )
+    await manager.start_voice_worker("demo_001")
+    with pytest.raises(RoutingConfirmationError):
+        await manager.confirm_routing(
+            "demo_001",
+            RoutingConfirmation(
+                session_id="demo_001",
+                caller_audio_blocked=True,
+                wearer_microphone_paused=False,
+                timestamp=utc_now_iso(),
+            ),
+        )
+    # Later complete confirmation must be refused (gates cleared / last_error set).
+    with pytest.raises(RoutingConfirmationError):
+        await manager.confirm_routing(
+            "demo_001",
+            RoutingConfirmation(
+                session_id="demo_001",
+                caller_audio_blocked=True,
+                wearer_microphone_paused=True,
+                timestamp=utc_now_iso(),
+            ),
+        )
+    types = [e.type for e in manager.bridge.publisher.events_for("demo_001")]
+    assert "takeover.active" not in types
+    assert manager.snapshot("demo_001")["state"] == SessionState.PROTECTING.value
+
+
+@pytest.mark.asyncio
+async def test_routing_before_worker_then_activate(manager: CallSessionManager) -> None:
+    await _bootstrap(manager)
+    await manager.start_takeover(
+        "demo_001", decision_id="d1", risk="high", recommended_action="takeover"
+    )
+    pending = await manager.confirm_routing(
+        "demo_001",
+        RoutingConfirmation(
+            session_id="demo_001",
+            caller_audio_blocked=True,
+            wearer_microphone_paused=True,
+            timestamp=utc_now_iso(),
+        ),
+    )
+    assert pending["activated"] is False
+    activated = await manager.start_voice_worker("demo_001")
+    assert activated["activated"] is True
+    assert manager.snapshot("demo_001")["state"] == SessionState.ASSISTANT_ACTIVE.value
+
+
+@pytest.mark.asyncio
 async def test_worker_failure_publishes_takeover_failed(
     manager: CallSessionManager,
 ) -> None:

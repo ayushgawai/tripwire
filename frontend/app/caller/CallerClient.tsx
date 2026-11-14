@@ -61,7 +61,15 @@ export default function CallerClient() {
         </div>
 
         <div className="space-y-4">
-          <CallSurface role="caller" state={view.state} onJoin={actions.join} replay={params.replay} compact />
+          <CallSurface
+            role="caller"
+            state={view.state}
+            onJoin={actions.join}
+            replay={params.replay}
+            compact
+            sessionId={params.sessionId}
+            accessToken={params.token}
+          />
           {!ended && (
             <Button variant="danger" size="lg" className="w-full" onClick={() => void actions.end()}>
               Hang up

@@ -21,9 +21,11 @@ import { useCallEvents } from "./useCallEvents";
 export interface UseCallSessionArgs {
   sessionId: string;
   role: Role;
+  /** Ayush opaque session token for this role (X-Session-Token). */
   accessToken: string;
   backendUrl: string;
-  /** When true, prefer mock client even if credentials say daily. */
+  /** Pre-fetched join credentials from parent (Dev CallSurface). */
+  initialCredentials?: ProviderCredentials | null;
   forceFixture?: boolean;
 }
 
@@ -36,7 +38,7 @@ async function postJson<T>(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-Tripwire-Access": accessToken,
+      "X-Session-Token": accessToken,
     },
     body: JSON.stringify(body),
   });
@@ -47,8 +49,17 @@ async function postJson<T>(
 }
 
 export function useCallSession(args: UseCallSessionArgs) {
-  const { sessionId, role, accessToken, backendUrl, forceFixture } = args;
+  const {
+    sessionId,
+    role,
+    accessToken,
+    backendUrl,
+    initialCredentials = null,
+    forceFixture,
+  } = args;
   const clientRef = useRef<CallProviderClient | null>(null);
+  const providerJoinSent = useRef(false);
+  const familyJoinedSent = useRef(false);
   const [state, setState] = useState<SessionState>("monitoring");
   const [connected, setConnected] = useState(false);
   const [connecting, setConnecting] = useState(false);
@@ -64,49 +75,57 @@ export function useCallSession(args: UseCallSessionArgs) {
   const [takeoverError, setTakeoverError] = useState<string | null>(null);
   const [providerError, setProviderError] = useState<string | null>(null);
   const [credentials, setCredentials] = useState<ProviderCredentials | null>(
-    null
+    initialCredentials
   );
   const callerIdRef = useRef<string | null>(null);
   const routingSent = useRef(false);
+  const protectingRef = useRef(false);
+
+  const base = backendUrl.replace(/\/$/, "");
+
+  const tryWearerRouting = useCallback(async () => {
+    if (role !== "wearer" || !clientRef.current || routingSent.current) return;
+    if (!protectingRef.current) return;
+    const callerId =
+      callerIdRef.current ||
+      clientRef.current
+        .getParticipants()
+        .find((p) => p.role === "caller" && !p.local)?.id;
+    if (!callerId) return;
+    try {
+      await applyWearerProtectionRouting({
+        client: clientRef.current,
+        sessionId,
+        callerParticipantId: callerId,
+      });
+      routingSent.current = true;
+      setCallerAudioBlocked(true);
+      setWearerMicPaused(true);
+      // Frozen contract: POST /signals { signal: "wearer_audio_blocked" }
+      await postJson(
+        `${base}/api/sessions/${sessionId}/signals`,
+        { signal: "wearer_audio_blocked" },
+        accessToken
+      );
+    } catch (err) {
+      setTakeoverError(err instanceof Error ? err.message : "Routing failed");
+    }
+  }, [accessToken, base, role, sessionId]);
 
   const onEvent = useCallback(
     async (event: EventEnvelope) => {
       switch (event.type) {
         case "takeover.started":
           setState("protecting");
+          protectingRef.current = true;
           setWearerProtected(true);
           setTakeoverError(null);
-          if (role === "wearer" && clientRef.current && !routingSent.current) {
-            const callerId =
-              callerIdRef.current ||
-              clientRef.current
-                .getParticipants()
-                .find((p) => p.role === "caller" && !p.local)?.id;
-            if (callerId) {
-              try {
-                const confirmation = await applyWearerProtectionRouting({
-                  client: clientRef.current,
-                  sessionId,
-                  callerParticipantId: callerId,
-                });
-                routingSent.current = true;
-                setCallerAudioBlocked(true);
-                setWearerMicPaused(true);
-                await postJson(
-                  `${backendUrl.replace(/\/$/, "")}/api/sessions/${sessionId}/routing-confirmation`,
-                  confirmation,
-                  accessToken
-                );
-              } catch (err) {
-                setTakeoverError(
-                  err instanceof Error ? err.message : "Routing failed"
-                );
-              }
-            }
-          }
+          setWorkerReady(false);
+          await tryWearerRouting();
           break;
         case "takeover.active":
           setState("assistant_active");
+          protectingRef.current = false;
           setWorkerReady(true);
           setCallerAudioBlocked(true);
           setWearerMicPaused(true);
@@ -115,6 +134,8 @@ export function useCallSession(args: UseCallSessionArgs) {
           setTakeoverError(
             String((event.payload as { reason?: string }).reason ?? "takeover_failed")
           );
+          setWorkerReady(false);
+          protectingRef.current = false;
           break;
         case "family.alert":
           setFamilyAlertSent(true);
@@ -145,33 +166,24 @@ export function useCallSession(args: UseCallSessionArgs) {
           break;
       }
     },
-    [accessToken, backendUrl, role, sessionId]
+    [tryWearerRouting]
   );
 
   const { events, connected: wsConnected, lastError: wsError } = useCallEvents({
     sessionId,
     backendUrl,
+    accessToken,
     onEvent,
   });
 
-  const join = useCallback(async () => {
-    setConnecting(true);
-    setProviderError(null);
-    try {
-      const base = backendUrl.replace(/\/$/, "");
-      const joinRes = await postJson<{
-        credentials: ProviderCredentials;
-        fixture_mode?: boolean;
-        state?: SessionState;
-      }>(
-        `${base}/api/sessions/${sessionId}/join`,
-        { role, access_token: accessToken },
-        accessToken
-      );
-      const creds = joinRes.credentials;
-      setCredentials(creds);
-      setFixtureMode(Boolean(creds.fixture_mode || forceFixture));
-      if (joinRes.state) setState(joinRes.state);
+  const connectWithCredentials = useCallback(
+    async (creds: ProviderCredentials) => {
+      if (clientRef.current) {
+        await clientRef.current.destroy();
+        clientRef.current = null;
+      }
+      providerJoinSent.current = false;
+      familyJoinedSent.current = false;
 
       const client = createCallClient(
         forceFixture || creds.fixture_mode || creds.provider === "mock"
@@ -179,70 +191,118 @@ export function useCallSession(args: UseCallSessionArgs) {
           : "daily"
       );
       clientRef.current = client;
+      setFixtureMode(Boolean(creds.fixture_mode || forceFixture));
+      setCredentials(creds);
+
       const unsubErr = client.onError((m) => setProviderError(m));
       const unsubJoin = client.onParticipantJoined((p) => {
         if (p.role === "caller") callerIdRef.current = p.id;
         setParticipants(client.getParticipants());
-        if (role === "family" || role === "caller" || role === "wearer") {
-          void postJson(
-            `${base}/api/sessions/${sessionId}/provider-join`,
-            {
-              role,
-              access_token: accessToken,
-              provider_participant_id: client.getLocalParticipantId(),
-            },
-            accessToken
-          ).catch(() => {
-            /* Ayush may not have route yet — adapter reports in CAPABILITIES */
-          });
-        }
-        if (role === "family" && p.local) {
-          void postJson(
-            `${base}/api/sessions/${sessionId}/family-joined`,
-            {
-              access_token: accessToken,
-              provider_participant_id: p.id,
-              user_id_from_provider: creds.user_id,
-            },
-            accessToken
-          );
+        if (protectingRef.current) {
+          void tryWearerRouting();
         }
       });
+
       await client.connect(creds);
       setParticipants(client.getParticipants());
       const caller = client.getParticipants().find((p) => p.role === "caller");
       if (caller) callerIdRef.current = caller.id;
+
+      const localId = client.getLocalParticipantId();
+      if (localId && !providerJoinSent.current) {
+        providerJoinSent.current = true;
+        if (role === "family" && !familyJoinedSent.current) {
+          familyJoinedSent.current = true;
+          // Real provider join confirmation for Ayush mark_family_joined.
+          // Host (app.py) should map this body to session.mark_family_joined + calls.stop_assistant.
+          await fetch(`${base}/api/sessions/${sessionId}/family-joined`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Session-Token": accessToken,
+            },
+            body: JSON.stringify({
+              role: "family",
+              provider_participant_id: localId,
+              user_id_from_provider: creds.user_id,
+            }),
+          }).catch(() => {
+            /* ignore transient network errors; snapshot/WS recover state */
+          });
+        }
+      }
+
       setConnected(true);
+      if (protectingRef.current) {
+        await tryWearerRouting();
+      }
       return () => {
         unsubErr();
         unsubJoin();
       };
+    },
+    [accessToken, base, forceFixture, role, sessionId, tryWearerRouting]
+  );
+
+  const join = useCallback(async () => {
+    setConnecting(true);
+    setProviderError(null);
+    try {
+      const joinRes = await postJson<
+        ProviderCredentials & {
+          credentials?: ProviderCredentials;
+          fixture_mode?: boolean;
+          state?: SessionState;
+        }
+      >(
+        `${base}/api/sessions/${sessionId}/join`,
+        { role },
+        accessToken
+      );
+      const creds =
+        (joinRes.credentials as ProviderCredentials | undefined) ??
+        (joinRes as ProviderCredentials);
+      if (joinRes.state) setState(joinRes.state);
+      await connectWithCredentials(creds);
     } catch (err) {
       setProviderError(err instanceof Error ? err.message : "Join failed");
       throw err;
     } finally {
       setConnecting(false);
     }
-  }, [accessToken, backendUrl, forceFixture, role, sessionId]);
+  }, [accessToken, base, connectWithCredentials, role, sessionId]);
+
+  // Parent-supplied credentials (CallSurface) — connect once.
+  useEffect(() => {
+    if (!initialCredentials || connected || connecting) return;
+    void (async () => {
+      setConnecting(true);
+      try {
+        await connectWithCredentials(initialCredentials);
+      } catch (err) {
+        setProviderError(err instanceof Error ? err.message : "Connect failed");
+      } finally {
+        setConnecting(false);
+      }
+    })();
+  }, [initialCredentials, connected, connecting, connectWithCredentials]);
 
   const endCall = useCallback(async () => {
-    const base = backendUrl.replace(/\/$/, "");
     await postJson(`${base}/api/sessions/${sessionId}/end`, {}, accessToken);
     await clientRef.current?.destroy();
     clientRef.current = null;
     setConnected(false);
     setState("ended");
-  }, [accessToken, backendUrl, sessionId]);
+  }, [accessToken, base, sessionId]);
 
   const reconnectWearer = useCallback(async () => {
-    if (role !== "wearer") return;
-    const base = backendUrl.replace(/\/$/, "");
+    // Contract: family/presenter sends wearer_reconnect in family_joined.
     await postJson(
-      `${base}/api/sessions/${sessionId}/reconnect-wearer`,
-      { access_token: accessToken },
+      `${base}/api/sessions/${sessionId}/signals`,
+      { signal: "wearer_reconnect" },
       accessToken
     );
-    if (clientRef.current) {
+    if (role === "wearer" && clientRef.current) {
       await restoreWearerAudioAfterExplicitReconnect(
         clientRef.current,
         callerIdRef.current
@@ -252,7 +312,7 @@ export function useCallSession(args: UseCallSessionArgs) {
       setWearerProtected(false);
       setWearerReconnected(true);
     }
-  }, [accessToken, backendUrl, role, sessionId]);
+  }, [accessToken, base, role, sessionId]);
 
   useEffect(() => {
     return () => {
@@ -309,6 +369,7 @@ export function useCallSession(args: UseCallSessionArgs) {
     join,
     endCall,
     reconnectWearer,
+    connecting,
     clientRef,
   };
 }

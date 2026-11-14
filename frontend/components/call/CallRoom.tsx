@@ -30,8 +30,9 @@ export function CallRoom({
   onEndCall,
   onReconnectWearer,
 }: CallRoomProps) {
+  // Contract: family/presenter sends wearer_reconnect (X-Session-Token role check).
   const canReconnect =
-    view.role === "wearer" &&
+    view.role === "family" &&
     view.familyJoined &&
     view.wearerProtected &&
     !view.wearerReconnected;

@@ -57,8 +57,11 @@ Confirm family with Daily `participant-joined` where `participant.user_id` match
 
 ## Voice worker
 
-- Real path: Pipecat `DailyTransport` joins the same room with a bot token, hears caller, speaks assistant line.
-- If `DAILY_API_KEY` / TTS / LLM credentials are missing: use **MockVoiceWorker** (clearly labeled). Never claim live AI success in mock mode.
+- Local Fixture: **MockVoiceWorker** (clearly labeled). Default via `VOICE_WORKER=mock`.
+- Live Pipecat: package import path verified (`pipecat.transports.daily.transport.DailyTransport`).
+  Full `PipelineWorker` join/readiness is **not fully wired** yet — `PipecatVoiceWorker` fails loudly
+  rather than claiming ready from construction alone. Use mock until Naman keys + pipeline join land.
+- Never claim live AI success in mock mode.
 
 ## Plan vs verified behavior
 
