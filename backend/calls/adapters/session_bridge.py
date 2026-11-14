@@ -82,11 +82,13 @@ class InviteAccessValidator:
         expected = self.issue(session_id, role)
         if not hmac.compare_digest(access_token, expected):
             raise SessionAccessError("Invalid session access token")
-        # Stable user_id bound to session+role (not guessable without secret).
+        # Stable user_id bound to session+role (Daily user_id max 36 chars).
         digest = hmac.new(
             self._secret, f"uid:{session_id}:{role.value}".encode(), hashlib.sha256
-        ).hexdigest()[:16]
-        return f"{role.value}_{session_id}_{digest}"
+        ).hexdigest()[:10]
+        # role(6) + _ + sess(12) + _ + dig(10) ~= 30 chars typical.
+        sid_part = session_id.replace("-", "")[:12]
+        return f"{role.value[:6]}_{sid_part}_{digest}"[:36]
 
 
 class SessionBridge:
