@@ -51,9 +51,11 @@ Implement in `backend/intelligence/__init__.py`:
 async def analyze_transcript(session_id: str, utterances: list[dict]) -> dict  # risk_result in shared/contracts.json
 ```
 The coordinator rejects any decision where an evidence quote is not a substring of the utterance it references.
-- [ ] Analyzer returns valid `risk_result` (low/review/high; none/alert/takeover)
-- [ ] `fixtures/`: benign, ambiguous $2,000, gift-card scam
-- [ ] Benign → low; price alone → review at most; scam → high + takeover with quotes
+- [x] Analyzer returns valid `risk_result` (low/review/high; none/alert/takeover). Every quote is a verbatim substring of the posted text. Proof: `python -m pytest backend/intelligence -q` → 93 passed (branch `pratham/intelligence`)
+- [x] `fixtures/`: benign, ambiguous $2,000, gift-card scam, plus ambient mechanic, fake bank, duplicates, and assistant/family excluded
+- [x] Benign → low; price alone → review at most; scam → high + takeover with quotes. Proof: `python -m backend.intelligence.replay fixtures --check` → 7/7 PASS
+- [ ] Gemini layer verified live. It is mocked in tests and falls back to rules-only when keys are missing. Blocked on Naman's `GEMINI_API_KEY` and `GEMINI_MODEL`.
+- Handoff notes for Ayush (reason codes extend the contract list; dedupe on state, not `decision_id`): `backend/intelligence/README.md`
 
 ## Naman: keys, providers, wearable
 - [x] `.env.example`, `docs/setup.md`, provider check scripts, audio adapter with laptop-mic fallback (38 tests pass)
