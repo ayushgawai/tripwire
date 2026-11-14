@@ -62,7 +62,10 @@ The coordinator rejects any decision where an evidence quote is not a substring 
 - [ ] Wearable streaming works, or the fallback is documented
 
 ## Dev: frontend pages
-- [ ] Next.js app in `frontend/`: wearer, caller, family, presenter pages
-- [ ] Render events from `shared/example_event.json` and fixtures before the backend is live
-- [ ] Use `GET /api/sessions/{id}` snapshot, then `WS /ws/sessions/{id}?token=`
-- [ ] Show the "Demo replay" label when `payload.demo_replay` is true
+Run: `cd frontend && npm install && npm run dev` (http://localhost:3000). Env: `NEXT_PUBLIC_BACKEND_URL`. Details: `frontend/README.md`.
+- [x] Next.js app in `frontend/`: wearer, caller, family, presenter pages + launcher. Proof: `npm run build` → compiled, 7 routes; `npm test` → 10 passed
+- [x] Render events from fixtures before the backend is live. Proof: `/presenter?replay=scam&autoplay=1` drives all open tabs (headless Chrome, no page errors)
+- [x] Use `GET /api/sessions/{id}` snapshot, then `WS /ws/sessions/{id}?token=`. Proof: against a contract mock: per-role tokens, `X-Session-Token`, 403 → Offline, WS drop → snapshot + reconnect, 410/`session.ended` → closed, `takeover.failed` shown honestly
+- [x] Show the "Demo replay" label when `payload.demo_replay` is true. Proof: reducer test "payload.demo_replay marks the view as demo replay"
+- [ ] Not yet verified against the real `backend/app.py` (not on main yet)
+- [ ] Mount Manav's `CallRoom` in `components/ui/CallSurface.tsx` once his branch merges. Trial merge of `manav/call-transport-takeover` builds; `@daily-co/daily-js@0.95.0` already added to `frontend/package.json`. Note: that branch conflicts with main on root `.gitignore`
