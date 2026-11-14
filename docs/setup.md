@@ -21,7 +21,7 @@ Everything below runs **from the repo root** (the folder that contains `backend/
 | Provider checks | One script per provider; exit 0 = PASS, 1 = FAIL, 2 = BLOCKED (key missing). Never print key values; print only `set`/`missing` and HTTP status. Run: `python -m backend.audio.provider_checks.run_all`. | this module |
 | Provider owners | Daily: Manav (call transport). Deepgram: Manav (live STT in voice worker) with Pratham consuming transcripts. Gemini: Pratham (risk detector) + Manav (assistant dialogue). ElevenLabs: Manav (assistant speech). Naman verifies all credentials. | plan ownership table (Deepgram owner inferred; flagged) |
 | Wearable | Plan names "Vexo hardware" / "the band" with a "supplied SDK". SDK is not in the repo. | plan |
-| Wearable env vars (added, UNVERIFIED adapter) | `WEARABLE_TRANSPORT` (`input_device` \| `ble`, default `input_device`), `WEARABLE_DEVICE_NAME` (default `Vexo`), `WEARABLE_BLE_ADDRESS`, `WEARABLE_BLE_AUDIO_CHAR_UUID`, `WEARABLE_BLE_CODEC` (`pcm16` \| `opus`), `WEARABLE_BLE_SAMPLE_RATE` (`16000`), `WEARABLE_BLE_CHANNELS` (`1`), `WEARABLE_BLE_HEADER_BYTES` (`0`). Read from env by `backend/audio/wearable.py` but **not yet in `.env.example`** (all optional). | added by Naman (not in plan; flagged) |
+| Wearable env vars (added, UNVERIFIED adapter) | `WEARABLE_TRANSPORT` (`input_device` \| `ble`, default `input_device`), `WEARABLE_DEVICE_NAME` (default `Vexo`), `WEARABLE_BLE_ADDRESS`, `WEARABLE_BLE_AUDIO_CHAR_UUID`, `WEARABLE_BLE_CODEC` (`pcm16` \| `opus`, no default: required for `ble`), `WEARABLE_BLE_SAMPLE_RATE` (`16000`), `WEARABLE_BLE_CHANNELS` (`1`), `WEARABLE_BLE_HEADER_BYTES` (`0`). Read from env by `backend/audio/wearable.py` but **not yet in `.env.example`** (all optional). `WEARABLE_DEVICE_NAME` must be the band's specific name; generic values like `Microphone`/`Realtek`/`Headset` are refused so laptop audio can never be labeled `wearable`. | added by Naman (not in plan; flagged) |
 
 ## 1. Prerequisites
 
@@ -52,7 +52,7 @@ All commands from the repo root.
 | Provider | Where | What you need | Notes |
 | --- | --- | --- | --- |
 | Daily | dashboard.daily.co → Developers → API key | `DAILY_API_KEY` | Free tier is fine. |
-| Deepgram | console.deepgram.com → API keys | `DEEPGRAM_API_KEY` | New accounts get free credit. Key needs **Member** scope or higher to call `/v1/listen`. The check uses model `nova-3`. |
+| Deepgram | console.deepgram.com → API keys | `DEEPGRAM_API_KEY` | New accounts get free credit. Key needs **Member** scope or higher: the check calls `GET /v1/projects` (auth) and `/v1/listen`, so a key that can't list projects reports FAIL. The check uses model `nova-3`. |
 | Gemini | aistudio.google.com/apikey | `GEMINI_API_KEY`, `GEMINI_MODEL` | Pick a model id from `python -m backend.audio.provider_checks.gemini --list-models`. Do **not** use "Gemini Decision 1" — not a real model id. |
 | ElevenLabs | elevenlabs.io → Profile → API keys | `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_ID` | Restricted key: enable **Text to Speech**, **Voices (read)**, **User (read)**. Pick a voice in Voice Library / My Voices and copy its voice ID. The check uses `eleven_flash_v2_5` (low latency). Free tier has a monthly character quota. |
 
@@ -138,7 +138,7 @@ finally:
 - In ambient mode, finalized transcripts are posted with `speaker="ambient"` to `POST /api/sessions/{id}/transcripts`.
 - `get_audio_source()` returns an unstarted source (use `async with src:`).
 
-**Switching source:** set `AUDIO_SOURCE` in `.env` to `laptop` (default), `file` (also set `AUDIO_FILE_PATH` to a 16 kHz mono WAV), or `wearable` (falls back to laptop mic if unavailable). The demo's `--source` flag overrides it.
+**Switching source:** set `AUDIO_SOURCE` in `.env` to `laptop` (default), `file` (also set `AUDIO_FILE_PATH` to a PCM WAV; any rate/channel count, 8/16/24/32-bit, is converted to the contract), or `wearable` (falls back to laptop mic if unavailable). The demo's `--source` flag overrides it.
 
 **Quick checks:**
 
@@ -148,7 +148,7 @@ finally:
 | `python -m backend.audio.demo --source file --file test.wav --seconds 5` | Replay the file in real time. |
 | `python -m backend.audio.demo --source laptop --seconds 5` | Capture from the laptop mic. |
 | `python -m backend.audio.demo --source wearable` | Try the wearable (falls back to laptop mic with a warning). |
-| `python -m pytest backend/audio/tests -q` | Unit tests: 36 pass, no hardware needed. |
+| `python -m pytest backend/audio/tests -q` | Unit tests: 38 pass, no hardware needed. |
 
 The demo prints source label, frames, frames/sec (expected 50), bytes and average RMS in dBFS.
 
