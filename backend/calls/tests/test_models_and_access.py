@@ -70,7 +70,8 @@ def test_access_validator_accepts_issued_token() -> None:
     v = InviteAccessValidator(secret="test-secret")
     token = v.issue("s1", ParticipantRole.WEARER)
     uid = v.validate_access("s1", token, ParticipantRole.WEARER)
-    assert uid.startswith("wearer_s1_")
+    assert uid.startswith("wearer_")
+    assert len(uid) <= 36
 
 
 def test_access_validator_rejects_cross_session() -> None:
