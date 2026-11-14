@@ -39,13 +39,14 @@ opuslib + system libopus (ble/opus). This module never fabricates frames.
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 import time
 from typing import AsyncIterator, Optional
 
 import numpy as np
 
-from backend.audio.base import (
+from .base import (
     CHANNELS,
     ENCODING,
     FRAME_MS,
@@ -57,6 +58,30 @@ from backend.audio.base import (
 )
 
 _UNVERIFIED_BLE = "UNVERIFIED: needs vendor characteristic/codec"
+log = logging.getLogger(__name__)
+# Substrings that match ordinary laptop/headset mics; refusing them keeps the
+# "wearable" label honest (a generic match would mislabel laptop audio).
+_GENERIC_DEVICE_NAMES = {"microphone", "mic", "realtek", "headset", "input", "audio",
+                         "default", "array", "usb", "bluetooth", "hands-free", "airpods"}
+
+
+def _env_int(name: str, default: int) -> int:
+    raw = os.getenv(name, "").strip()
+    if not raw:
+        return default
+    try:
+        return int(raw)
+    except ValueError as exc:
+        raise RuntimeError(f"{name} must be an integer") from exc
+
+
+def _load_dotenv() -> None:
+    try:
+        from dotenv import load_dotenv
+        from pathlib import Path
+        load_dotenv(Path(__file__).resolve().parents[2] / ".env", override=False)
+    except ImportError:
+        pass
 _SENTINEL = object()
 
 
@@ -64,14 +89,15 @@ class WearableAudioSource(AudioSource):
     """Audio from the Vexo wearable. See module docstring: UNVERIFIED."""
 
     def __init__(self, device_name: Optional[str] = None, **_ignored) -> None:
+        _load_dotenv()
         self._transport = os.getenv("WEARABLE_TRANSPORT", "input_device").strip().lower()
         self._device_name = (device_name or os.getenv("WEARABLE_DEVICE_NAME", "Vexo")).strip()
         self._ble_address = os.getenv("WEARABLE_BLE_ADDRESS", "").strip()
         self._ble_char_uuid = os.getenv("WEARABLE_BLE_AUDIO_CHAR_UUID", "").strip()
         self._ble_codec = os.getenv("WEARABLE_BLE_CODEC", "").strip().lower()
-        self._ble_rate = int(os.getenv("WEARABLE_BLE_SAMPLE_RATE", "16000"))
-        self._ble_channels = int(os.getenv("WEARABLE_BLE_CHANNELS", "1"))
-        self._ble_header_bytes = int(os.getenv("WEARABLE_BLE_HEADER_BYTES", "0"))
+        self._ble_rate = _env_int("WEARABLE_BLE_SAMPLE_RATE", 16000)
+        self._ble_channels = _env_int("WEARABLE_BLE_CHANNELS", 1)
+        self._ble_header_bytes = _env_int("WEARABLE_BLE_HEADER_BYTES", 0)
 
         self._queue: Optional[asyncio.Queue] = None
         self._loop: Optional[asyncio.AbstractEventLoop] = None
@@ -140,11 +166,11 @@ class WearableAudioSource(AudioSource):
     async def stop(self) -> None:
         self._running = False
         if self._stream is not None:
+            stream, self._stream = self._stream, None
             try:
-                self._stream.stop()
-                self._stream.close()
+                stream.stop()
             finally:
-                self._stream = None
+                stream.close()
         if self._ble_client is not None:
             client, self._ble_client = self._ble_client, None
             try:
@@ -213,6 +239,11 @@ class WearableAudioSource(AudioSource):
         needle = self._device_name.lower()
         if not needle:
             raise RuntimeError("WEARABLE_DEVICE_NAME is empty")
+        if needle in _GENERIC_DEVICE_NAMES:
+            raise RuntimeError(
+                f"WEARABLE_DEVICE_NAME={self._device_name!r} is too generic and could match a "
+                f"non-wearable mic; use the band's specific device name"
+            )
         matches = [
             (idx, dev)
             for idx, dev in enumerate(sd.query_devices())
@@ -252,6 +283,8 @@ class WearableAudioSource(AudioSource):
             callback=callback,
         )
         self._stream.start()
+        log.warning("audio source: wearable (UNVERIFIED adapter) via OS input device %r rate=%s "
+                    "-- confirm this device really is the band", dev.get("name"), src_rate)
 
     # ---- mode B: BLE GATT stream (skeleton) -------------------------------
     def _check_ble_config(self) -> None:

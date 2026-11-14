@@ -72,3 +72,17 @@ def test_ble_pcm16_packets_become_contract_frames(monkeypatch):
         assert [f.seq for f in frames] == [0, 1, 2]
 
     asyncio.run(run())
+
+
+def test_generic_device_name_rejected(monkeypatch):
+    monkeypatch.setitem(
+        sys.modules, "sounddevice",
+        _fake_sd([{"name": "Microphone (Realtek)", "max_input_channels": 2, "default_samplerate": 48000}]),
+    )
+    with pytest.raises(RuntimeError, match="too generic"):
+        WearableAudioSource(device_name="Microphone").probe()
+
+
+def test_blank_int_env_uses_default(monkeypatch):
+    monkeypatch.setenv("WEARABLE_BLE_SAMPLE_RATE", "")
+    assert WearableAudioSource()._ble_rate == 16000
