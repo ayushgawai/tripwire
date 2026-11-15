@@ -44,7 +44,8 @@ export default function FamilyClient() {
     alerted.current = key;
     if (firstLoad) return;
     chime();
-    notify(`${wearer} may be in a risky call`, view.alert.summary);
+    const r = (view.alert.reasons as string[] | undefined) ?? [];
+    notify(r.includes("possible_fall") ? `${wearer} may have fallen` : r.includes("sos") ? `${wearer} asked for help` : `${wearer} may be in a risky call`, view.alert.summary);
     return flashTitle(`${wearer} needs you`);
   }, [view.alert, wearer, status, view.log.length]);
 
@@ -82,6 +83,11 @@ export default function FamilyClient() {
 
   const ev = evidenceIndex(view);
   const alert = view.alert;
+  // Vexo band alerts (fall / SOS) are not about a call: adapt the wording.
+  const reasons: string[] = (alert?.reasons as string[] | undefined) ?? [];
+  const kind = reasons.includes("possible_fall") ? "fall" : reasons.includes("sos") ? "sos" : "call";
+  const headline = kind === "fall" ? `${wearer} may have fallen` : kind === "sos" ? `${wearer} asked for help` : `${wearer} may be in a risky call`;
+  const joinLabel = kind === "call" ? "Join the call" : `Call ${wearer} now`;
   const ended = view.state === "ended";
 
   return (
@@ -121,7 +127,7 @@ export default function FamilyClient() {
                     {view.familyJoined ? "You're on the call" : "Tripwire alert"} {alert.timestamp && `· ${timeOf(alert.timestamp)}`}
                   </p>
                   <h1 className="mt-1 font-display text-4xl font-normal leading-tight sm:text-5xl">
-                    {view.familyJoined ? `You're helping ${wearer} now` : `${wearer} may be in a risky call`}
+                    {view.familyJoined ? `You're helping ${wearer} now` : headline}
                   </h1>
                   <p className="mt-3 text-lg leading-relaxed text-ink-soft">{alert.summary}</p>
                   <ReasonChips reasons={alert.reasons} className="mt-4" />
@@ -136,7 +142,7 @@ export default function FamilyClient() {
                   {!view.familyJoined ? (
                     <>
                       <Button variant="family" size="xl" onClick={join} loading={joining} className="w-full sm:w-auto">
-                        {joining ? "Joining call…" : "Join the call"}
+                        {joining ? "Joining call…" : joinLabel}
                       </Button>
                       <p className="text-sm text-ink-faint">
                         {joining
@@ -170,10 +176,13 @@ export default function FamilyClient() {
             </section>
 
             {/* ---------- Evidence ---------- */}
-            <Card title="What was said" aside={<span className="text-xs text-ink-faint">Exact quotes from the call</span>}>
-              <EvidenceList evidence={alert.evidence} transcript={view.transcript} large />
-            </Card>
+            {alert.evidence?.length ? (
+              <Card title="What was said" aside={<span className="text-xs text-ink-faint">Exact quotes from the call</span>}>
+                <EvidenceList evidence={alert.evidence} transcript={view.transcript} large />
+              </Card>
+            ) : null}
 
+            {view.transcript.length > 0 && (
             <Card
               title="Full transcript"
               aside={
@@ -188,6 +197,7 @@ export default function FamilyClient() {
                 <p className="text-sm text-ink-faint">Context for the quotes above, including what the Tripwire assistant said.</p>
               )}
             </Card>
+            )}
 
             {(creds || view.familyJoined) && (
               <CallSurface
