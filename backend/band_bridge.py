@@ -110,13 +110,24 @@ class Bridge:
                     buf: list[str] = []
                     try:
                         async for raw in dg:
-                            if isinstance(raw, str) and (text := parse_deepgram_message(json.loads(raw), buf)):
+                            if not isinstance(raw, str):
+                                continue
+                            msg = json.loads(raw)
+                            alt = (msg.get("channel") or {}).get("alternatives") or [{}]
+                            if msg.get("type") == "Results" and not msg.get("is_final") and alt[0].get("transcript"):
+                                log(f"partial: {alt[0]['transcript']}")
+                            if text := parse_deepgram_message(msg, buf):
                                 log(f"heard: {text}")
-                                await self.post(text)
+                                try:
+                                    await self.post(text)
+                                except httpx.HTTPError as exc:
+                                    log(f"post failed: {exc}")
                     finally:
                         sender.cancel()
-            except (websockets.ConnectionClosed, OSError) as exc:
-                log(f"deepgram reconnecting ({exc.__class__.__name__})")
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:  # never let transcription die silently
+                log(f"deepgram reconnecting ({exc.__class__.__name__}: {exc})")
                 await asyncio.sleep(1)
 
     async def events(self) -> None:
