@@ -82,7 +82,7 @@ async def run_stt_ws(websocket, session_id: str, role: str, ingest_fn) -> None:
     DG_URL = (
         "wss://api.deepgram.com/v1/listen"
         "?model=nova-3&smart_format=true&punctuate=true"
-        "&interim_results=true&endpointing=300&utterance_end_ms=1000"
+        "&interim_results=true&endpointing=200&utterance_end_ms=1000"
     )
 
     buffer: list[str] = []
@@ -131,6 +131,13 @@ async def run_stt_ws(websocket, session_id: str, role: str, ingest_fn) -> None:
                                 await websocket.send_json({"type": "interim", "text": t})
                             except Exception:
                                 return
+                            try:   # live words on every dashboard (not stored, not analyzed)
+                                from backend import session as _s
+                                st = _s.get_session(session_id).state
+                                who = "family" if (st == _s.SessionState.family_joined and role == "caller") else role
+                                await _s.publish_event(session_id, "transcript.interim", {"speaker": who, "text": t})
+                            except Exception:
+                                pass
 
                 # Completed utterance?
                 text = parse_deepgram_message(msg, buffer)

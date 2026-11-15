@@ -24,7 +24,8 @@ export type EventType =
   | "session.ended"
   | "error"
   | "wearer.reconnected"
-  | "assistant.spoke";
+  | "assistant.spoke"
+  | "transcript.interim";
 
 export interface EventEnvelope<P = Record<string, unknown>> {
   event_id: string;
@@ -92,6 +93,8 @@ export interface SessionView {
   seenEventIds: string[];
   log: EventEnvelope[];
   lastAssistantUtterance: { utterance_id: string; text: string; audio_url: string | undefined } | null;
+  /** Live (not yet final) words from the speech relay. */
+  interim: { speaker: string; text: string } | null;
 }
 
 export interface JoinCredentials {

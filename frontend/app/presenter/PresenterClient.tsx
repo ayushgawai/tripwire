@@ -156,6 +156,12 @@ export default function PresenterClient() {
             className="flex min-h-[440px] flex-col lg:row-span-2"
           >
             <Transcript utterances={view.transcript} evidence={ev} large className="max-h-[58vh] flex-1" />
+            {view.interim && (
+              <p className="mt-3 rounded-2xl border border-dashed border-line px-4 py-3 text-lg text-ink-soft" aria-live="polite">
+                <span className="mr-2 text-xs font-semibold uppercase tracking-wider text-ink-faint">{view.interim.speaker === "family" ? "Family" : view.interim.speaker === "wearer" ? "Wearer" : "Caller"} · speaking</span>
+                {view.interim.text}<span className="ml-0.5 animate-pulse">▍</span>
+              </p>
+            )}
           </Card>
 
           {/* ---------- Risk ---------- */}

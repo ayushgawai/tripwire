@@ -36,6 +36,7 @@ export function emptyView(session_id = "", mode: SessionMode = "call"): SessionV
     seenEventIds: [],
     log: [],
     lastAssistantUtterance: null,
+    interim: null,
   };
 }
 
@@ -140,8 +141,13 @@ export function applyEvent(view: SessionView, ev: EventEnvelope): SessionView {
     case "transcript.final": {
       const u = normalizeUtterance(p, at);
       if (u && !v.transcript.some((t) => t.utterance_id === u.utterance_id)) {
-        v = { ...v, transcript: [...v.transcript, u] };
+        v = { ...v, transcript: [...v.transcript, u], interim: null };
       }
+      break;
+    }
+    case "transcript.interim": {
+      const txt = str(p.text);
+      v = { ...v, interim: txt ? { speaker: str(p.speaker, "caller"), text: txt } : null };
       break;
     }
     case "risk.updated": {
