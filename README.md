@@ -12,6 +12,11 @@
 
 ![Tripwire system architecture: capture (Vexo band, in-app call, fall detection) → FastAPI backend (audio relay, Deepgram, risk engine, session coordinator) → act (ElevenLabs, Daily, family alert, wearer screen, live console)](docs/architecture.png)
 
+## Dashboard
+
+<img width="1495" height="946" alt="image" src="https://github.com/user-attachments/assets/0cd8b29f-9deb-4ca9-9c78-b285dd19fc2b" />
+
+
 | Stage | What happens | Key files |
 |---|---|---|
 | **Capture** | The **Vexo band** streams its mic over BLE (Opus, 16 kHz, 50 packets/s) through the band bridge. The **in-app call** streams browser mic audio (MediaRecorder, WebM/Opus, 250 ms chunks) to the backend relay. A band free-fall event or SOS goes straight to a family alert. | `backend/band_bridge.py`, `backend/vendor/vexo_open/`, `frontend/app/_lib/useLiveTranscription.ts` |
