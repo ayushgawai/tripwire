@@ -29,7 +29,7 @@ flowchart LR
     end
 
     DG["Deepgram Nova-3<br/>streaming STT"]
-    GEM["Gemini 3.5 Flash-Lite<br/>ambiguity + reply"]
+    GEM["Gemini Decision 1 + 3.5 Flash-Lite<br/>scam probability + reply"]
     EL["ElevenLabs Flash v2.5<br/>human voice"]
     DAILY["Daily WebRTC<br/>per-track routing"]
 

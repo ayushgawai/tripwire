@@ -23,7 +23,7 @@ from fastapi.middleware.cors import CORSMiddleware
 load_dotenv()
 
 from backend import session  # noqa: E402
-from backend import assistant_voice, stt  # noqa: E402
+from backend import assistant_voice, gemini_decision, stt  # noqa: E402
 
 logger = logging.getLogger("tripwire")
 
@@ -303,7 +303,11 @@ async def ingest_utterance(session_id: str, body: dict) -> dict:
         return {"accepted": True, "duplicate": False}
 
     try:
-        decision = await intel.analyze_transcript(session_id, utterances_for_analysis)
+        # Rules/evidence (Pratham's analyzer) and Gemini Decision 1 run in parallel.
+        decision, gd = await asyncio.gather(
+            intel.analyze_transcript(session_id, utterances_for_analysis),
+            gemini_decision.decide([u for u in utterances_for_analysis if u.get("speaker") != "assistant"]),
+        )
     except Exception as exc:
         await session.publish_event(session_id, "error", {"source": "intelligence", "message": str(exc)})
         return {"accepted": True, "duplicate": False}
@@ -312,6 +316,13 @@ async def ingest_utterance(session_id: str, body: dict) -> dict:
     if err:
         await session.publish_event(session_id, "error", {"source": "intelligence", "message": err})
         return {"accepted": True, "duplicate": False}
+
+    if gd:
+        decision["gemini_decision"] = gd
+        # Decision 1 is >=90% sure it's a scam and rules already found evidence: escalate review -> takeover.
+        if decision.get("risk") == "review" and decision.get("evidence") and gd["action"] == "takeover" and gd["p_scam"] >= 0.9:
+            decision["risk"], decision["recommended_action"] = "high", "takeover"
+            decision["reasons"] = list(decision.get("reasons", [])) + ["gemini_decision_high"]
 
     session.record_decision(session_id, decision)
     await session.publish_event(session_id, "risk.updated", dict(decision))  # full risk_result

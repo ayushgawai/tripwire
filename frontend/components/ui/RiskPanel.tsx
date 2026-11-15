@@ -86,6 +86,7 @@ export function RiskPanel({ decision, history }: { decision: RiskDecision | null
       <ThreatGauge key={decision.decision_id} risk={decision.risk} />
       <p className="text-[15px] leading-relaxed text-ink">{decision.summary || "—"}</p>
       <ReasonChips reasons={decision.reasons} />
+      <GeminiDecisionLine gd={(decision as { gemini_decision?: GeminiDecision }).gemini_decision} />
       <div className="flex items-center justify-between border-t border-line pt-3 text-xs text-ink-faint tabular-nums">
         <span>
           Recommended: <b className="text-ink-soft">{ACTION_LABEL[decision.recommended_action]}</b>
@@ -102,6 +103,22 @@ export function RiskPanel({ decision, history }: { decision: RiskDecision | null
           ))}
         </ol>
       )}
+    </div>
+  );
+}
+
+type GeminiDecision = { p_scam: number; action: string; confidence: number; latency_ms: number };
+
+/** Calibrated scam probability from Gemini Decision 1 (Gemini Decisions API), shown next to the rules. */
+function GeminiDecisionLine({ gd }: { gd?: GeminiDecision }) {
+  if (!gd) return null;
+  const pct = Math.round(gd.p_scam * 100);
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-line px-3 py-2 text-xs text-ink-soft tabular-nums">
+      <span className="font-semibold text-ink">Gemini Decision 1</span>
+      <span className={cn("font-semibold", pct >= 90 ? "text-danger" : pct >= 50 ? "text-watch" : "text-safe")}>{pct}% scam</span>
+      <span>suggests {gd.action}</span>
+      <span className="font-mono text-ink-faint">{gd.latency_ms} ms</span>
     </div>
   );
 }

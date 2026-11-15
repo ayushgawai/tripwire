@@ -19,7 +19,8 @@ The rule we pitched ourselves: if we took any sponsor out, Tripwire would stop w
 - **Smart formatting is a detection feature for us.** Deepgram turns "five hundred dollars" into "$500" and "gift cards" into clean tokens. Our evidence engine quotes exact words, and every quote is checked against the transcript before family sees it. Without accurate, normalized transcripts, the evidence can't be trusted. We measured it on the scam script: the transcript was word for word.
 - **Audio relay architecture:** browser mic → Tripwire backend → Deepgram. The key never touches a client, and the same relay accepts audio from the band.
 
-### Google DeepMind Gemini (3.5 Flash-Lite): the judgement
+### Google DeepMind Gemini (Decision 1 + 3.5 Flash-Lite): the judgement
+- **Gemini Decision 1 scores every sentence: "is this a scam?" and "none / alert / take over?"** in one forward pass, with no text generation. Live on our key: **P(scam) = 0.99 → takeover in ~420 ms** for the grandchild scam, 0.01 for "call me back tomorrow", and only 0.20 for "the repair is $2,000" on its own. Calibrated probabilities mean we can set thresholds instead of trusting a vibe.
 - **Fast enough to sit inside a live conversation.** We benchmarked the Flash family on our key: 3.5 Flash-Lite came back in **~620 ms** median, versus 2.6 s for a larger Flash model. A decision that lands 3 seconds late lands after the gift card number is read out.
 - **Rules first, Gemini for ambiguity.** Fixed rules catch the obvious script (gift cards, urgency, secrecy). Gemini resolves the grey zone, like "$2,000 for the oil change", where context decides. That makes an always-on device affordable: benign chatter costs nothing, and the model is only called when it matters.
 - **It also writes the AI assistant's single live reply** to the caller, within strict safety rules: it never impersonates the wearer, never shares private details, never agrees to pay.
