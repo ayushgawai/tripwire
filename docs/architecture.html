@@ -1,0 +1,116 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Tripwire architecture</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#F1F1EF;--ink:#1F2023;--soft:#4A4E54;--faint:#7A7E85;--line:#D9D5CD;--sage:#5F7358;--red:#E5384F;--blue:#3B82F6;--fam:#3B4FD8;--ai:#0E9FB0;--amber:#C98A1C}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{width:1920px;height:1080px;background:radial-gradient(1400px 800px at 50% 40%,#fff,var(--bg) 70%);font-family:Inter,sans-serif;color:var(--ink);position:relative;overflow:hidden}
+  h1{position:absolute;left:80px;top:40px;font:600 50px Fraunces,serif;letter-spacing:-.02em}
+  .sub{position:absolute;left:82px;top:104px;font:500 22px Inter;color:var(--soft)}
+  .node{position:absolute;background:#fff;border:1px solid var(--line);border-radius:22px;padding:18px 20px;box-shadow:0 24px 48px -28px rgba(31,32,35,.35)}
+  .node h3{display:flex;align-items:center;gap:12px;font:700 22px Inter}
+  .node h3 img,.node h3 .glyph{width:34px;height:34px}
+  .node p{font:500 15px/1.4 Inter;color:var(--soft);margin-top:8px}
+  .mono{font:500 14px 'JetBrains Mono',monospace;color:var(--faint);margin-top:8px}
+  .tag{display:inline-block;margin-top:10px;padding:5px 11px;border-radius:999px;font:600 13px Inter}
+  .group{position:absolute;border:1.5px dashed #C9C4BA;border-radius:28px}
+  .glabel{position:absolute;font:700 13px Inter;letter-spacing:.16em;color:var(--faint);text-transform:uppercase}
+  .wm{font:800 20px Inter;letter-spacing:-.02em}
+  .states{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+  .states span{font:600 12.5px Inter;padding:4px 9px;border-radius:999px;background:#F3F1EC;color:var(--soft)}
+  svg.wires{position:absolute;inset:0}
+  .footer{position:absolute;left:900px;bottom:28px;right:80px;display:flex;justify-content:space-between;font:500 17px Inter;color:var(--soft)}
+</style></head><body>
+<h1>Tripwire · system architecture</h1>
+<div class="sub">From a sentence spoken near the wearer to a paused call and a family alert, in about a second.</div>
+
+<div class="group" style="left:60px;top:160px;width:330px;height:820px"></div><div class="glabel" style="left:84px;top:172px">Capture</div>
+<div class="group" style="left:450px;top:160px;width:700px;height:820px"></div><div class="glabel" style="left:474px;top:172px">Tripwire backend · FastAPI</div>
+<div class="group" style="left:1210px;top:160px;width:650px;height:820px"></div><div class="glabel" style="left:1234px;top:172px">Act</div>
+
+<svg class="wires" viewBox="0 0 1920 1080">
+  <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#9AA0A8"/></marker></defs>
+  <g fill="none" stroke="#9AA0A8" stroke-width="2.5" marker-end="url(#ar)">
+    <path d="M374 300 C420 300 430 290 478 290"/>
+    <path d="M374 620 C420 620 430 310 478 310"/>
+    <path d="M802 290 L856 290"/>
+    <path d="M995 420 L995 466"/>
+    <path d="M800 770 L800 796"/>
+    <path d="M1132 860 C1180 860 1190 300 1238 300"/>
+    <path d="M1132 875 C1180 875 1190 540 1238 540"/>
+    <path d="M1132 890 C1180 890 1190 700 1238 700"/>
+    <path d="M1132 905 C1180 905 1190 870 1238 870"/>
+  </g>
+  <path d="M480 950 C380 1010 250 1000 230 960" fill="none" stroke="#E5384F" stroke-width="2.5" stroke-dasharray="7 7" marker-end="url(#ar)"/>
+  <text x="250" y="1022" font-family="Inter" font-weight="600" font-size="15" fill="#E5384F">LED: blink red on risk · breathe blue when family joins</text>
+</svg>
+
+<!-- Capture -->
+<div class="node" style="left:84px;top:205px;width:290px">
+  <h3><svg class="glyph" viewBox="0 0 24 24"><rect x="7" y="1.5" width="10" height="21" rx="5" fill="#1F2023"/><circle cx="12" cy="12" r="2.2" fill="#3B82F6"/></svg>Vexo band</h3>
+  <p>Always-on wrist mic. Hears calls on speaker <b>and</b> in-person scams. Motion sensor detects falls.</p>
+  <div class="mono">BLE · Opus 16 kHz · 50 pkt/s · auto-reconnect</div>
+  <span class="tag" style="background:#E8EEFB;color:#2D5BD3">the USP: no app to open</span>
+</div>
+<div class="node" style="left:84px;top:545px;width:290px">
+  <h3><img src="../demo/video/logos/webrtc.svg">In-app call</h3>
+  <p>Caller and wearer browsers. Live captions stream the mic to the relay.</p>
+  <div class="mono">MediaRecorder · WebM/Opus · 250 ms</div>
+</div>
+<div class="node" style="left:84px;top:800px;width:290px">
+  <h3><svg class="glyph" viewBox="0 0 24 24"><path d="M12 3v12M6 9l6 6 6-6" stroke="#1F2023" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M4 20h16" stroke="#1F2023" stroke-width="2" stroke-linecap="round"/></svg>Fall detection</h3>
+  <p>Band free-fall event → instant family alert, no button press.</p>
+</div>
+
+<!-- Backend -->
+<div class="node" style="left:480px;top:205px;width:320px">
+  <h3><img src="../demo/video/logos/fastapi.svg">Audio relay</h3>
+  <p>Streams band and browser audio to speech-to-text. Keys never leave the server.</p>
+  <div class="mono">WS /ws/sessions/{id}/stt</div>
+</div>
+<div class="node" style="left:860px;top:205px;width:270px">
+  <h3><img src="logos/deepgram.svg" onerror="this.src='../demo/video/logos/deepgram.svg'">Deepgram</h3>
+  <p><b>Nova-3</b> streaming STT. Smart formatting turns “five hundred dollars” into “$500”.</p>
+  <div class="mono">endpointing 300 ms</div>
+</div>
+<div class="node" style="left:480px;top:470px;width:650px;border-color:#C9A46A">
+  <h3><img src="../demo/video/logos/googlegemini.svg">Risk engine · rules + Google DeepMind Gemini</h3>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:10px">
+    <div><b style="font-size:16px">Rules</b><p>Gift cards, urgency, secrecy, fake emergency. Instant.</p></div>
+    <div><b style="font-size:16px">Gemini Decision 1</b><p>Calibrated P(scam) + action in one pass.</p><div class="mono">99% · takeover · ~420 ms</div></div>
+    <div><b style="font-size:16px">Gemini 3.5 Flash-Lite</b><p>Grey-zone recall and the AI's single safe reply.</p><div class="mono">~620 ms</div></div>
+  </div>
+  <p style="margin-top:12px">Every evidence quote is verified word for word against the transcript before family sees it.</p>
+</div>
+<div class="node" style="left:480px;top:800px;width:650px">
+  <h3><img src="../demo/video/logos/python.svg">Session coordinator</h3>
+  <div class="states"><span>monitoring</span><span>→ protecting</span><span>→ assistant_active</span><span>→ family_joined</span><span>→ ended</span></div>
+  <p>Idempotent takeover · role-scoped tokens · ordered event stream over WebSockets.</p>
+</div>
+
+<!-- Act -->
+<div class="node" style="left:1240px;top:205px;width:290px">
+  <h3><img src="../demo/video/logos/elevenlabs.svg">ElevenLabs</h3>
+  <p><b>Flash v2.5</b>: calm, human AI voice holds the caller. Identifies itself as AI.</p>
+  <div class="mono">speaks ~1 s after takeover</div>
+</div>
+<div class="node" style="left:1550px;top:205px;width:290px">
+  <h3><span class="wm" style="color:#1F2023">daily</span><span style="font:600 14px Inter;color:var(--faint)">.co</span></h3>
+  <p>WebRTC rooms with <b>per-track routing</b>: wearer stops hearing the caller; AI and family still can.</p>
+  <div class="mono">role-scoped meeting tokens</div>
+</div>
+<div class="node" style="left:1240px;top:470px;width:600px">
+  <h3><svg class="glyph" viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="3" fill="none" stroke="#3B4FD8" stroke-width="2"/><circle cx="12" cy="18" r="1" fill="#3B4FD8"/></svg>Family alert</h3>
+  <p>“Dad may be in a risky call” with the <b>exact quoted words</b>. One tap joins; the real participant-joined event stops the AI.</p>
+</div>
+<div class="node" style="left:1240px;top:640px;width:600px">
+  <h3><svg class="glyph" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="#E5384F" stroke-width="2"/><path d="M12 7v6M12 16.5v.5" stroke="#E5384F" stroke-width="2.2" stroke-linecap="round"/></svg>Wearer screen</h3>
+  <p>Calm warning, large type: “This request may be unsafe. Your daughter is joining.” No alarms.</p>
+</div>
+<div class="node" style="left:1240px;top:810px;width:600px">
+  <h3><img src="../demo/video/logos/nextdotjs.svg">Live console</h3>
+  <p>Next.js presenter: routing graph, verified evidence, Gemini Decision score, state timeline.</p>
+</div>
+
+<div class="footer" style="justify-content:flex-end"><span>Built on <b>Vexo</b> · <b>Deepgram</b> · <b>Google DeepMind Gemini</b> · <b>ElevenLabs</b> · <b>Daily</b></span></div>
+</body></html>
