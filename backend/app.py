@@ -255,7 +255,7 @@ async def post_transcript(session_id: str, body: dict, x_session_token: Optional
     return await ingest_utterance(session_id, {k: body[k] for k in ("utterance_id", "speaker", "text", "timestamp")})
 
 
-MAX_ASSISTANT_REPLIES = int(os.environ.get("MAX_ASSISTANT_REPLIES", "1"))
+MAX_ASSISTANT_REPLIES = int(os.environ.get("MAX_ASSISTANT_REPLIES", "50"))  # keep stalling until family joins
 
 
 async def ingest_utterance(session_id: str, body: dict) -> dict:
@@ -469,16 +469,62 @@ async def band_event(session_id: str, body: dict, x_session_token: Optional[str]
 
 # ── Assistant voice + live transcription ────────────────────────────────
 
+PERSONA = (
+    "You are Linda, the elderly man's neighbor who happened to pick up his phone because he is in the other room. "
+    "Your only goal is to keep the caller talking, calmly and naturally, until his daughter joins the call. "
+    "Sound like a real, warm, slightly slow person on the phone: short spoken sentences, small fillers like 'oh' or 'hmm'. "
+    "Ask simple questions (which grandson is this, what happened, where are you, what number can he call you back on), "
+    "mishear a little, say he's coming or looking for his glasses. "
+    "Never say you are an AI or an assistant, never mention scams, verification, family members joining, or the police. "
+    "Never agree to buy gift cards, send money, or share any personal or financial information. "
+    "Reply with one or two short sentences only, no stage directions."
+)
+FALLBACK_STALLS = [
+    "Oh, hold on dear, he's just finding his glasses. Which grandson did you say this is?",
+    "Sorry, the line's a bit crackly. What happened, are you alright?",
+    "Hmm, where are you calling from, sweetheart?",
+    "He's coming, he's coming. What's a good number for him to call you back on?",
+]
+_reply_busy: set[str] = set()
+
+
+async def _stall_reply(session_id: str) -> str:
+    """Human-sounding stalling reply from Gemini (fast model), with canned fallbacks."""
+    s = session.get_session(session_id)
+    convo = "\n".join(
+        f"{'Linda' if u['speaker'] == 'assistant' else 'Caller'}: {u['text']}"
+        for u in s.transcript[-8:] if u["speaker"] in ("caller", "assistant")
+    )
+    key, model = os.environ.get("GEMINI_API_KEY"), os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite")
+    n = sum(1 for u in s.transcript if u["speaker"] == "assistant")
+    if key:
+        try:
+            import httpx
+            async with httpx.AsyncClient(timeout=4) as c:
+                r = await c.post(f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+                                 headers={"x-goog-api-key": key},
+                                 json={"systemInstruction": {"parts": [{"text": PERSONA}]},
+                                       "contents": [{"role": "user", "parts": [{"text": convo + "\nLinda:"}]}],
+                                       "generationConfig": {"maxOutputTokens": 60, "temperature": 0.8}})
+            text = r.json()["candidates"][0]["content"]["parts"][0]["text"].strip().strip('"')
+            low = text.lower()
+            if text and not any(w in low for w in ("ai ", "assistant", "scam", "verif", "police", "gift card", "send money")):
+                return text
+        except Exception:
+            logger.exception("stall reply failed")
+    return FALLBACK_STALLS[n % len(FALLBACK_STALLS)]
+
+
 async def _assistant_reply(session_id: str, caller_text: str) -> None:
-    from backend.intelligence.intervention import ASSISTANT_FALLBACK, assistant_reply, is_safe_reply
+    if session_id in _reply_busy:          # one reply at a time; never talk over itself
+        return
+    _reply_busy.add(session_id)
     try:
-        text = await assistant_reply(caller_text)
-    except Exception:
-        text = ASSISTANT_FALLBACK
-    if not is_safe_reply(text):
-        text = ASSISTANT_FALLBACK
-    if session.get_session(session_id).state == session.SessionState.assistant_active:
-        await assistant_voice.speak(session_id, text)
+        text = await _stall_reply(session_id)
+        if session.get_session(session_id).state == session.SessionState.assistant_active:
+            await assistant_voice.speak(session_id, text)
+    finally:
+        _reply_busy.discard(session_id)
 
 
 OPENING_LINE = os.environ.get("ASSISTANT_OPENING_LINE",
