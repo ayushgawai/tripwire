@@ -53,12 +53,25 @@ class Bridge:
         self.sid: str | None = None
         self.token: str | None = None
         # Empty packets would tell Deepgram "end of stream", so drop them.
-        band.on("audio", lambda m: self.audio_q.put_nowait(m.opus) if m.opus and self.mic_on and not self.audio_q.full() else None)
+        self.packets = 0
+        band.on("audio", self._on_audio)
         band.on("free-fall", lambda e: asyncio.ensure_future(self.band_alert("fall")))
         if sos:
             band.on("double-tap", lambda e: asyncio.ensure_future(self.band_alert("sos")))
         band.on("reconnecting", lambda e: log("band link dropped: reconnecting (no tap needed)"))
         band.on("reconnected", lambda e: log("band link restored"))
+
+    def _on_audio(self, m) -> None:
+        self.packets += 1
+        if m.opus and self.mic_on and not self.audio_q.full():
+            self.audio_q.put_nowait(m.opus)
+
+    async def heartbeat(self) -> None:
+        while True:
+            await asyncio.sleep(15)
+            state = "link up" if self.band.connected else "LINK DOWN (reconnecting)"
+            log(f"heartbeat: {state}, mic {'on' if self.mic_on else 'off'}, {self.packets} audio packets in 15s")
+            self.packets = 0
 
     async def set_mic(self, on: bool) -> None:
         if on != self.mic_on:
@@ -165,6 +178,7 @@ async def main() -> None:
     bridge = Bridge(band, http, a.backend, use_mic=not a.no_mic, sos=a.sos)
     await band.configure(events=True)
     await bridge.standby()
+    asyncio.create_task(bridge.heartbeat())
 
     try:
         if a.follow:
