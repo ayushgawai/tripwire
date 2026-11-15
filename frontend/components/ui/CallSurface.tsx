@@ -11,8 +11,11 @@ import { cn } from "@/components/ui/cn";
 function toProviderCredentials(
   role: Role,
   sessionId: string,
-  creds: JoinCredentials
+  joined: JoinCredentials
 ): ProviderCredentials {
+  // POST /join returns {accepted, credentials: {...}, fixture_mode}; accept flat creds too.
+  const nested = (joined as { credentials?: JoinCredentials }).credentials;
+  const creds: JoinCredentials = nested ? { ...nested, fixture_mode: (joined as { fixture_mode?: boolean }).fixture_mode ?? nested.fixture_mode } : joined;
   return {
     session_id: sessionId,
     role,

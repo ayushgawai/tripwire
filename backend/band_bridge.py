@@ -1,11 +1,14 @@
 """Vexo band bridge: the band's always-on mic -> Deepgram -> Tripwire risk engine; risk -> band LED.
 
-    python -m backend.band_bridge --band 17                 # new ambient session, prints role links
-    python -m backend.band_bridge --band 17 --session ses_x --token <presenter token>   # join a session
-    python -m backend.band_bridge --sim                     # pretend band (no Bluetooth)
+    python -m backend.band_bridge --band 17 --follow       # stay connected; follow every new session (demo)
+    python -m backend.band_bridge --band 17                # new ambient session, prints role links
+    python -m backend.band_bridge --band 17 --session ses_x --token <presenter token>
+    python -m backend.band_bridge --sim --follow           # pretend band (no Bluetooth)
 
-Double-tap the band first (its light blinks blue). While the mic is on the band shows solid blue
-and refuses LED commands, so on a high-risk decision the bridge turns the mic off and blinks red.
+Double-tap the band first (its light blinks blue). The band connects ONCE and stays connected
+(the Vexo library auto-reconnects if the link drops). While the mic is on the band shows solid
+blue and refuses LED commands, so on a high-risk decision the bridge turns the mic off and
+blinks red. Between sessions the band breathes green (standby).
 """
 
 from __future__ import annotations
@@ -38,11 +41,108 @@ def now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+def log(msg: str) -> None:
+    print(f"{datetime.now().strftime('%H:%M:%S')} {msg}", flush=True)
+
+
+class Bridge:
+    def __init__(self, band: Band, http: httpx.AsyncClient, backend: str, use_mic: bool, sos: bool):
+        self.band, self.http, self.backend, self.use_mic = band, http, backend, use_mic
+        self.mic_on = False
+        self.audio_q: asyncio.Queue[bytes] = asyncio.Queue(maxsize=500)
+        self.sid: str | None = None
+        self.token: str | None = None
+        # Empty packets would tell Deepgram "end of stream", so drop them.
+        band.on("audio", lambda m: self.audio_q.put_nowait(m.opus) if m.opus and self.mic_on and not self.audio_q.full() else None)
+        band.on("free-fall", lambda e: asyncio.ensure_future(self.band_alert("fall")))
+        if sos:
+            band.on("double-tap", lambda e: asyncio.ensure_future(self.band_alert("sos")))
+        band.on("reconnected", lambda e: log("band link restored"))
+
+    async def set_mic(self, on: bool) -> None:
+        if on != self.mic_on:
+            await self.band.configure(audio=on)
+            self.mic_on = on
+
+    async def standby(self) -> None:
+        await self.set_mic(False)
+        await self.band.set_led(GREEN, pattern="breathe", period=2000)
+
+    async def band_alert(self, kind: str) -> None:
+        if self.sid:
+            await self.http.post(f"/api/sessions/{self.sid}/band-event", headers={"X-Session-Token": self.token}, json={"kind": kind})
+            log(f"BAND {kind.upper()}: family alerted")
+
+    async def post(self, text: str) -> None:
+        await self.http.post(f"/api/sessions/{self.sid}/transcripts", headers={"X-Session-Token": self.token},
+                             json={"utterance_id": f"band_{uuid.uuid4().hex}", "speaker": "ambient", "text": text, "timestamp": now()})
+
+    async def deepgram(self) -> None:
+        while True:  # reconnect if Deepgram drops (idle timeout, network blip)
+            try:
+                async with websockets.connect(DG_URL, additional_headers={"Authorization": f"Token {os.environ['DEEPGRAM_API_KEY']}"}) as dg:
+                    async def send():
+                        while True:
+                            try:
+                                await dg.send(await asyncio.wait_for(self.audio_q.get(), timeout=8))
+                            except asyncio.TimeoutError:
+                                await dg.send(json.dumps({"type": "KeepAlive"}))
+                    sender = asyncio.create_task(send())
+                    buf: list[str] = []
+                    try:
+                        async for raw in dg:
+                            if isinstance(raw, str) and (text := parse_deepgram_message(json.loads(raw), buf)):
+                                log(f"heard: {text}")
+                                await self.post(text)
+                    finally:
+                        sender.cancel()
+            except (websockets.ConnectionClosed, OSError) as exc:
+                log(f"deepgram reconnecting ({exc.__class__.__name__})")
+                await asyncio.sleep(1)
+
+    async def events(self) -> None:
+        ws_url = self.backend.replace("http", "ws", 1) + f"/ws/sessions/{self.sid}?token={self.token}"
+        async with websockets.connect(ws_url) as ws:
+            async for raw in ws:
+                t = json.loads(raw).get("type")
+                if t in ("takeover.started", "family.alert"):
+                    await self.set_mic(False)                       # LED is locked while the mic is on
+                    await self.band.set_led(RED, pattern="blink", period=400)
+                    log("RISK: band blinking red")
+                elif t == "family.joined":
+                    await self.band.set_led(BLUE_FAMILY, pattern="breathe", period=2000)
+                    log("family joined: band breathing blue")
+                elif t == "session.ended":
+                    return
+
+    async def run_session(self, sid: str, token: str) -> None:
+        self.sid, self.token = sid, token
+        while not self.audio_q.empty():
+            self.audio_q.get_nowait()
+        if self.use_mic:
+            await self.set_mic(True)                                # solid blue = listening
+            log(f"session {sid}: band mic on (solid blue). Listening...")
+        else:
+            log(f"session {sid}: band ready (no mic). Listening...")
+        dg = asyncio.create_task(self.deepgram()) if self.use_mic else None
+        try:
+            await self.events()
+        except (websockets.ConnectionClosed, OSError):
+            pass
+        finally:
+            if dg:
+                dg.cancel()
+            self.sid = None
+            await self.standby()
+            log(f"session {sid} ended: band on standby (breathing green)")
+
+
 async def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--band", type=int, default=17)
     ap.add_argument("--sim", action="store_true")
     ap.add_argument("--backend", default=os.environ.get("BACKEND_URL", "http://localhost:8000"))
+    ap.add_argument("--follow", action="store_true", help="stay connected and attach to every new session")
     ap.add_argument("--session")
     ap.add_argument("--token", help="presenter token for --session")
     ap.add_argument("--mode", default="ambient", choices=["ambient", "call"])
@@ -51,100 +151,47 @@ async def main() -> None:
     a = ap.parse_args()
 
     http = httpx.AsyncClient(base_url=a.backend, timeout=20)
-    if a.session:
-        sid, token = a.session, a.token
-    else:
-        r = (await http.post("/api/sessions", json={"mode": a.mode, "protection_enabled": True})).json()
-        sid, token = r["session_id"], r["tokens"]["presenter"]
-        fe = os.environ.get("FRONTEND_ORIGIN", "http://localhost:3000")
-        for role, tok in r["tokens"].items():
-            print(f"  {role:9s} {fe}/{role}?session={sid}&token={tok}")
-    print(f"session {sid}")
-
-    band = await Band.connect(a.band, "sim" if a.sim else "ble")
-    print(f"connected to {band.name}")
-    await band.set_led(GREEN, pattern="breathe", period=1500)   # armed
-    await asyncio.sleep(1.5)
-
-    async def band_alert(kind: str) -> None:
-        await http.post(f"/api/sessions/{sid}/band-event", headers={"X-Session-Token": token}, json={"kind": kind})
-        print(f"BAND {kind.upper()}: family alerted")
-
-    if a.sos:
-        band.on("double-tap", lambda e: asyncio.ensure_future(band_alert("sos")))
-    band.on("free-fall", lambda e: asyncio.ensure_future(band_alert("fall")))
+    band = None
+    for attempt in range(1, 10_000):                                 # keep trying until the band is discoverable
+        try:
+            band = await Band.connect(a.band, "sim" if a.sim else "ble")
+            break
+        except Exception:
+            if attempt == 1:
+                log(f"waiting for Vexo-HACK-{a.band}: double-tap the band (blue blink)")
+            await asyncio.sleep(2)
+    log(f"connected to {band.name}")
+    bridge = Bridge(band, http, a.backend, use_mic=not a.no_mic, sos=a.sos)
     await band.configure(events=True)
-
-    audio_q: asyncio.Queue[bytes] = asyncio.Queue(maxsize=500)
-    # Empty packets would tell Deepgram "end of stream", so drop them.
-    band.on("audio", lambda m: audio_q.put_nowait(m.opus) if m.opus and not audio_q.full() else None)
-    mic_on = not a.no_mic
-    if mic_on:
-        await band.configure(audio=True)                        # solid blue = listening
-        print("band mic on (solid blue). Listening...")
-    else:
-        print("band ready (no mic): automatic LED alerts + fall detection. Listening...")
-
-    async def post(text: str) -> None:
-        await http.post(f"/api/sessions/{sid}/transcripts", headers={"X-Session-Token": token},
-                        json={"utterance_id": f"band_{uuid.uuid4().hex}", "speaker": "ambient", "text": text, "timestamp": now()})
-
-    async def deepgram() -> None:
-        while True:  # reconnect if Deepgram drops (idle timeout, network blip)
-            try:
-                await _deepgram_once()
-            except (websockets.ConnectionClosed, OSError) as exc:
-                print(f"deepgram reconnecting ({exc.__class__.__name__})")
-                await asyncio.sleep(1)
-
-    async def _deepgram_once() -> None:
-        async with websockets.connect(DG_URL, additional_headers={"Authorization": f"Token {os.environ['DEEPGRAM_API_KEY']}"}) as dg:
-            async def send():
-                while True:
-                    try:
-                        pkt = await asyncio.wait_for(audio_q.get(), timeout=8)
-                        await dg.send(pkt)
-                    except asyncio.TimeoutError:
-                        await dg.send(json.dumps({"type": "KeepAlive"}))
-            sender = asyncio.create_task(send())
-            buf: list[str] = []
-            try:
-                async for raw in dg:
-                    if isinstance(raw, str) and (text := parse_deepgram_message(json.loads(raw), buf)):
-                        print(f"heard: {text}")
-                        await post(text)
-            finally:
-                sender.cancel()
-
-    async def events() -> None:
-        nonlocal mic_on
-        ws_url = a.backend.replace("http", "ws", 1) + f"/ws/sessions/{sid}?token={token}"
-        async with websockets.connect(ws_url) as ws:
-            async for raw in ws:
-                t = json.loads(raw).get("type")
-                if t in ("takeover.started", "family.alert"):
-                    if mic_on:
-                        mic_on = False
-                        await band.configure(audio=False)           # LED is locked while the mic is on
-                    await band.set_led(RED, pattern="blink", period=400)
-                    print("RISK: band blinking red")
-                elif t == "family.joined":
-                    await band.set_led(BLUE_FAMILY, pattern="breathe", period=2000)
-                    print("family joined: band breathing blue")
-                elif t == "session.ended":
-                    return
+    await bridge.standby()
 
     try:
-        dg_task = asyncio.create_task(deepgram() if mic_on else asyncio.sleep(0))
-        try:
-            await events()      # returns on session.ended
-        except websockets.ConnectionClosed:
-            print("session closed")
-        dg_task.cancel()
+        if a.follow:
+            seen: set[str] = set()
+            log("follow mode: waiting for a session (start one at http://localhost:3000)")
+            while True:
+                try:
+                    latest = (await http.get("/api/demo/latest")).json()
+                except httpx.HTTPError:
+                    latest = {}
+                sid = latest.get("session_id")
+                if sid and sid not in seen:
+                    seen.add(sid)
+                    await bridge.run_session(sid, latest["token"])
+                await asyncio.sleep(1)
+        else:
+            if a.session:
+                sid, token = a.session, a.token
+            else:
+                r = (await http.post("/api/sessions", json={"mode": a.mode, "protection_enabled": True})).json()
+                sid, token = r["session_id"], r["tokens"]["presenter"]
+                fe = os.environ.get("FRONTEND_ORIGIN", "http://localhost:3000")
+                for role, tok in r["tokens"].items():
+                    print(f"  {role:9s} {fe}/{role}?session={sid}&token={tok}", flush=True)
+            await bridge.run_session(sid, token)
     finally:
         try:
-            if mic_on:
-                await band.configure(audio=False)
+            await bridge.set_mic(False)
             await band.led_off()
         finally:
             await band.disconnect()

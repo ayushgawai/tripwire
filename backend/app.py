@@ -16,7 +16,7 @@ import sys
 from typing import Annotated, Any, Optional
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Header, WebSocket, WebSocketDisconnect, status
+from fastapi import FastAPI, HTTPException, Header, Request, WebSocket, WebSocketDisconnect, status
 from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -206,9 +206,26 @@ def health():
     return {"ok": True}
 
 
+_LATEST_SESSION: str | None = None
+
+
+@app.get("/api/demo/latest")
+def demo_latest(request: Request):
+    """Lets the Vexo band bridge follow the newest session without reconnecting the band.
+    ponytail: local demo convenience; only answers requests from this machine."""
+    if request.client is None or request.client.host not in {"127.0.0.1", "::1", "localhost"}:
+        raise HTTPException(status_code=403, detail="local only")
+    s = session.store._sessions.get(_LATEST_SESSION or "")
+    if s is None or s.state == session.SessionState.ended:
+        return {"session_id": None}
+    return {"session_id": s.session_id, "mode": s.mode, "token": s.tokens["presenter"]}
+
+
 @app.post("/api/sessions")
 def create_session(body: dict):
     s = session.store.create(body["mode"], body.get("protection_enabled", True))
+    global _LATEST_SESSION
+    _LATEST_SESSION = s.session_id
     return {
         "session_id": s.session_id,
         "state": s.state.value,
