@@ -11,7 +11,7 @@ Tripwire: the Vexo band that pauses a scam call and brings in family
 A convincing voice. An urgent request. Grandpa, alone with the decision.
 
 Tripwire runs on the Vexo band, an always-listening wristband. When someone pressures an older adult (gift cards, "right now", "don't tell anyone"), Tripwire notices within about a second:
-• it pauses the call, and an AI assistant that clearly identifies itself holds the caller
+• it pauses the call, and a calm, human-sounding AI holds the caller
 • the wearer gets a calm warning instead of the scammer's voice
 • a trusted family member gets the exact words that raised concern, and joins in one tap
 • if the wearer falls, the band alerts family automatically
@@ -24,7 +24,7 @@ How it works
 • Daily: WebRTC call rooms with per-track routing, so the wearer stops hearing the caller while the AI and family still can
 • FastAPI + Next.js: session state machine, verified evidence, live console
 
-Principles: identifies itself as AI · never moves money · family decides when the wearer rejoins.
+Principles: never moves money · never speaks for the wearer · family decides when the wearer rejoins.
 
 Built in a day at Vexo Hacks.
 
