@@ -57,6 +57,7 @@ class Bridge:
         band.on("free-fall", lambda e: asyncio.ensure_future(self.band_alert("fall")))
         if sos:
             band.on("double-tap", lambda e: asyncio.ensure_future(self.band_alert("sos")))
+        band.on("reconnecting", lambda e: log("band link dropped: reconnecting (no tap needed)"))
         band.on("reconnected", lambda e: log("band link restored"))
 
     async def set_mic(self, on: bool) -> None:
@@ -154,7 +155,7 @@ async def main() -> None:
     band = None
     for attempt in range(1, 10_000):                                 # keep trying until the band is discoverable
         try:
-            band = await Band.connect(a.band, "sim" if a.sim else "ble")
+            band = await Band.connect(a.band, "sim" if a.sim else "ble", auto_reconnect=True, reconnect_seconds=120)
             break
         except Exception:
             if attempt == 1:

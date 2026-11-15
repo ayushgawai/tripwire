@@ -1,4 +1,4 @@
-.PHONY: venv backend test smoke
+.PHONY: venv backend test smoke band
 
 venv:
 	python3 -m venv .venv
@@ -12,3 +12,6 @@ test:
 
 smoke:
 	.venv/bin/python demo/smoke.py
+
+band:
+	./scripts_run_band.sh 17
