@@ -139,10 +139,24 @@ class Bridge:
         else:
             log(f"session {sid}: band ready (no mic). Listening...")
         dg = asyncio.create_task(self.deepgram()) if self.use_mic else None
+
+        async def newer_session() -> None:   # a newer session started: leave this one at once
+            while True:
+                await asyncio.sleep(1)
+                try:
+                    latest = (await self.http.get("/api/demo/latest")).json().get("session_id")
+                except (httpx.HTTPError, ValueError):
+                    continue
+                if latest and latest != sid:
+                    return
         try:
-            await self.events()
-        except (websockets.ConnectionClosed, OSError):
-            pass
+            done, pending = await asyncio.wait({asyncio.create_task(self.events()), asyncio.create_task(newer_session())},
+                                               return_when=asyncio.FIRST_COMPLETED)
+            for t in pending:
+                t.cancel()
+            for t in done:
+                if t.exception() and not isinstance(t.exception(), (websockets.ConnectionClosed, OSError)):
+                    raise t.exception()
         finally:
             if dg:
                 dg.cancel()
