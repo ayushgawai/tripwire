@@ -207,6 +207,36 @@ def health():
 
 
 _LATEST_SESSION: str | None = None
+_DEMO_PROCS: list = []
+
+
+@app.post("/api/demo/start")
+def demo_start(body: dict, request: Request):
+    """One-click live demo (local only): fresh session + hidden helpers. scenario: 'scam' (call) or 'fall' (ambient).
+    ponytail: demo convenience; spawns the laptop-mic caller page and the wearer page in hidden Chrome."""
+    import subprocess
+    from pathlib import Path
+    if request.client is None or request.client.host not in {"127.0.0.1", "::1", "localhost"}:
+        raise HTTPException(status_code=403, detail="local only")
+    import signal
+    for proc in _DEMO_PROCS:   # kill helper + its headless Chrome (own process group)
+        try:
+            os.killpg(proc.pid, signal.SIGKILL)
+        except (ProcessLookupError, PermissionError):
+            pass
+    _DEMO_PROCS.clear()
+    scenario = body.get("scenario", "scam")
+    s = create_session({"mode": "call" if scenario == "scam" else "ambient", "protection_enabled": True})
+    sid, t = s["session_id"], s["tokens"]
+    fe = os.environ.get("FRONTEND_ORIGIN", "http://localhost:3000")
+    if scenario == "scam":
+        live = Path(__file__).resolve().parent.parent / "demo" / "live"
+        for script, role, extra in (("wearer_bg.mjs", "wearer", "&captions=off"), ("caller_bg.mjs", "caller", "")):
+            _DEMO_PROCS.append(subprocess.Popen(["node", script, f"{fe}/{role}?session={sid}&token={t[role]}{extra}"], cwd=live,
+                                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True))
+    return {"session_id": sid, "scenario": scenario,
+            "presenter": f"{fe}/presenter?session={sid}&token={t['presenter']}",
+            "family": f"{fe}/family?session={sid}&token={t['family']}"}
 
 
 @app.get("/api/demo/latest")
