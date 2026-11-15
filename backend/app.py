@@ -500,7 +500,7 @@ async def band_event(session_id: str, body: dict, x_session_token: Optional[str]
 # ── Assistant voice + live transcription ────────────────────────────────
 
 PERSONA = (
-    "You are Linda, the elderly man's neighbor who happened to pick up his phone because he is in the other room. "
+    "You are Mike, the elderly man's neighbor (a friendly older man) who happened to pick up his phone because he is in the other room. "
     "Your only goal is to keep the caller talking, calmly and naturally, until his daughter joins the call. "
     "Sound like a real, warm, slightly slow person on the phone: short spoken sentences, small fillers like 'oh' or 'hmm'. "
     "Ask simple questions (which grandson is this, what happened, where are you, what number can he call you back on), "
@@ -522,7 +522,7 @@ async def _stall_reply(session_id: str) -> str:
     """Human-sounding stalling reply from Gemini (fast model), with canned fallbacks."""
     s = session.get_session(session_id)
     convo = "\n".join(
-        f"{'Linda' if u['speaker'] == 'assistant' else 'Caller'}: {u['text']}"
+        f"{'Mike' if u['speaker'] == 'assistant' else 'Caller'}: {u['text']}"
         for u in s.transcript[-8:] if u["speaker"] in ("caller", "assistant")
     )
     key, model = os.environ.get("GEMINI_API_KEY"), os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite")
@@ -534,7 +534,7 @@ async def _stall_reply(session_id: str) -> str:
                 r = await c.post(f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
                                  headers={"x-goog-api-key": key},
                                  json={"systemInstruction": {"parts": [{"text": PERSONA}]},
-                                       "contents": [{"role": "user", "parts": [{"text": convo + "\nLinda:"}]}],
+                                       "contents": [{"role": "user", "parts": [{"text": convo + "\nMike:"}]}],
                                        "generationConfig": {"maxOutputTokens": 60, "temperature": 0.8}})
             text = r.json()["candidates"][0]["content"]["parts"][0]["text"].strip().strip('"')
             low = text.lower()
