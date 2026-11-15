@@ -255,7 +255,7 @@ async def post_transcript(session_id: str, body: dict, x_session_token: Optional
     return await ingest_utterance(session_id, {k: body[k] for k in ("utterance_id", "speaker", "text", "timestamp")})
 
 
-MAX_ASSISTANT_REPLIES = 2
+MAX_ASSISTANT_REPLIES = int(os.environ.get("MAX_ASSISTANT_REPLIES", "1"))
 
 
 async def ingest_utterance(session_id: str, body: dict) -> dict:
@@ -264,6 +264,10 @@ async def ingest_utterance(session_id: str, body: dict) -> dict:
     s = _session_or_raise(session_id)
     if s.state == session.SessionState.ended:
         raise HTTPException(status_code=410, detail="session ended")
+    if body["speaker"] != "assistant" and _is_assistant_echo(s, body["text"]):
+        return {"accepted": True, "duplicate": True, "echo": True}
+    if s.state == session.SessionState.family_joined and body["speaker"] == "caller":
+        body = {**body, "speaker": "family"}   # demo: one laptop mic; after the join it's the family member talking
 
     duplicate = not session.store.add_utterance(session_id, {
         "utterance_id": body["utterance_id"],
@@ -477,10 +481,26 @@ async def _assistant_reply(session_id: str, caller_text: str) -> None:
         await assistant_voice.speak(session_id, text)
 
 
+OPENING_LINE = os.environ.get("ASSISTANT_OPENING_LINE",
+    "Hi, sorry, he just stepped away for a second. Who am I speaking with, and what's this regarding?")
+
+
 async def _on_event(envelope: dict) -> None:
     if envelope["type"] == "takeover.active":
-        from backend.intelligence.intervention import ASSISTANT_OPENING
-        await assistant_voice.speak(envelope["session_id"], ASSISTANT_OPENING)
+        await assistant_voice.speak(envelope["session_id"], OPENING_LINE)
+
+
+def _is_assistant_echo(s, text: str) -> bool:
+    """The laptop mic can hear the AI voice from the speakers; drop transcripts that repeat it."""
+    words = set(w.strip(".,?!'").lower() for w in text.split())
+    if not words:
+        return True
+    for u in s.transcript[-4:]:
+        if u.get("speaker") == "assistant":
+            aw = set(w.strip(".,?!'").lower() for w in u["text"].split())
+            if len(words & aw) / len(words) >= 0.6:
+                return True
+    return False
 
 
 session.listeners[:] = [f for f in session.listeners if getattr(f, "__name__", "") != "_on_event"] + [_on_event]  # idempotent on reload

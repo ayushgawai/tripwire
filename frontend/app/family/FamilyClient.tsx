@@ -25,7 +25,7 @@ const JOIN_TIMEOUT_MS = 15000;
 
 export default function FamilyClient() {
   const params = useSessionParams();
-  const wearer = useSearchParams().get("wearer") || "Mom";
+  const wearer = useSearchParams().get("wearer") || "Dad";
   const { view, status, lastError, actions } = useSession(params);
   const [soundOn, setSoundOn] = useState(false);
   const [joining, setJoining] = useState(false);
@@ -86,7 +86,7 @@ export default function FamilyClient() {
   // Vexo band alerts (fall / SOS) are not about a call: adapt the wording.
   const reasons: string[] = (alert?.reasons as string[] | undefined) ?? [];
   const kind = reasons.includes("possible_fall") ? "fall" : reasons.includes("sos") ? "sos" : "call";
-  const headline = kind === "fall" ? `${wearer} may have fallen` : kind === "sos" ? `${wearer} asked for help` : `${wearer} may be in a risky call`;
+  const headline = view.state === "ended" ? `Call ended. ${wearer} is safe.` : kind === "fall" ? `${wearer} may have fallen` : kind === "sos" ? `${wearer} asked for help` : `${wearer} may be in a risky call`;
   const joinLabel = kind === "call" ? "Join the call" : `Call ${wearer} now`;
   const ended = view.state === "ended";
 

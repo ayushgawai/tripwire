@@ -64,6 +64,10 @@ async def speak(session_id: str, text: str) -> None:
             )
         if resp.status_code == 200:
             _AUDIO_CACHE[utterance_id] = resp.content
+            if os.environ.get("PLAY_AI_LOCALLY", "0") == "1":   # demo: speak out loud on this machine
+                import subprocess, tempfile
+                f = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False); f.write(resp.content); f.close()
+                subprocess.Popen(["afplay", f.name])
         else:
             audio_url = None
             logger.error(

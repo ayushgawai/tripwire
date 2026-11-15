@@ -38,7 +38,7 @@ def test_takeover_active_speaks_opening_line_once(monkeypatch):
         await session.end_session(s.session_id)
 
     asyncio.run(flow())
-    assert len(spoken) == 1 and "Tripwire" in spoken[0]
+    assert len(spoken) == 1 and spoken[0]
 
 
 def test_audio_route_serves_cached_audio_only():
