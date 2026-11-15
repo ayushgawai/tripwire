@@ -27,17 +27,17 @@ How it works
 Principles: identifies itself as AI · never moves money · family decides when the wearer rejoins.
 
 Built in a day at Vexo Hacks.
+
 Chapters
 0:00 The call
 0:21 Tripwire detects pressure
 0:25 The AI takes over
 0:32 Family joins in one tap
-0:44 Fall detected
-0:51 The real product, live
-0:57 Architecture
-1:12 A pause when it matters
+0:44 What it does: calls, in-person scams, falls
+0:52 How it works
+1:08 A pause when it matters
 
-The story scenes are illustrations with AI-generated voices; the product segment is a screen recording of the live pipeline.
+Story scenes are illustrations with AI-generated voices.
 
 **Tags**
 Tripwire, Vexo, Vexo band, Vexo Hacks, scam prevention, elder fraud, grandparent scam, AI safety, wearable AI, Deepgram, Gemini, Gemini Decision, Google DeepMind, ElevenLabs, Daily, WebRTC, hackathon, fall detection, family safety, voice AI

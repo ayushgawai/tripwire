@@ -1,0 +1,29 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@500;600;700&display=swap" rel="stylesheet">
+<style>*{margin:0;box-sizing:border-box}body{width:1920px;height:1080px;overflow:hidden;font-family:Inter;color:#1F2023;background:radial-gradient(1200px 700px at 50% 40%,#fff,#F1F1EF 70%)}
+.h{position:absolute;left:0;right:0;text-align:center;font:600 64px Fraunces,serif;letter-spacing:-.02em}
+.row{position:absolute;display:flex;gap:40px;left:50%;transform:translateX(-50%)}
+.f{width:440px;padding:40px 36px;background:#fff;border:1px solid #D9D5CD;border-radius:30px;box-shadow:0 30px 60px -32px rgba(0,0,0,.3);text-align:center}
+.f svg{width:76px;height:76px}.f b{display:block;font:600 34px Fraunces,serif;margin-top:16px}.f span{display:block;font:500 22px/1.4 Inter;color:#4A4E54;margin-top:10px}
+.s{position:absolute;left:300px;width:1320px;height:118px;display:flex;align-items:center;gap:32px;padding:0 40px;background:#fff;border:1px solid #D9D5CD;border-radius:26px;box-shadow:0 24px 48px -30px rgba(0,0,0,.3)}
+.s img,.s .g{width:62px;height:62px}.s b{font:700 36px Inter;width:330px}.s span{font:500 28px Inter;color:#4A4E54}
+</style></head><body>
+<div class="h" id="h1" style="top:150px">Always by their side</div>
+<div class="row" id="feat" style="top:330px">
+ <div class="f" id="f1"><svg viewBox="0 0 24 24" fill="none" stroke="#3B4FD8" stroke-width="1.6"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2"/></svg><b>Every call</b><span>Pauses scam calls and lets an AI hold the caller.</span></div>
+ <div class="f" id="f2"><svg viewBox="0 0 24 24" fill="none" stroke="#E5384F" stroke-width="1.6"><circle cx="8" cy="8" r="3"/><circle cx="16" cy="8" r="3"/><path d="M3 20c0-3 2.2-5 5-5s5 2 5 5M11 20c0-3 2.2-5 5-5s5 2 5 5"/></svg><b>In person</b><span>Catches pressure in face-to-face conversations.</span></div>
+ <div class="f" id="f3"><svg viewBox="0 0 24 24" fill="none" stroke="#1F9D7A" stroke-width="1.6"><path d="M12 3v12M6 9l6 6 6-6M4 21h16"/></svg><b>Falls</b><span>Detects a fall and alerts family instantly.</span></div>
+</div>
+<div class="h" id="h2" style="top:110px">How it works</div>
+<div class="s" id="s0" style="top:250px"><svg class="g" viewBox="0 0 24 24"><rect x="7" y="1.5" width="10" height="21" rx="5" fill="#1F2023"/><circle cx="12" cy="12" r="2.2" fill="#3B82F6"/></svg><b>Vexo band</b><span>Always-on wrist mic, red-light alerts, fall sensor</span></div>
+<div class="s" id="s1" style="top:390px"><img src="logos/deepgram.svg"><b>Deepgram</b><span>Real-time speech-to-text, word for word</span></div>
+<div class="s" id="s2" style="top:530px"><img src="logos/googlegemini.svg"><b>Gemini Decision 1</b><span>Scores every sentence for scam pressure, &lt;0.5 s</span></div>
+<div class="s" id="s3" style="top:670px"><img src="logos/elevenlabs.svg"><b>ElevenLabs</b><span>A calm, human voice for the Tripwire AI</span></div>
+<div class="s" id="s4" style="top:810px"><span class="g" style="display:flex;align-items:center;justify-content:center;font:800 26px Inter">daily</span><b>Daily</b><span>Routes the call so family can step right in</span></div>
+<script>
+const c=(x)=>Math.max(0,Math.min(1,x)),e=(x)=>1-Math.pow(1-c(x),3),$=(i)=>document.getElementById(i);
+function show(el,t0,t,out){const k=e((t-t0)/.5)*(out===undefined?1:1-e((t-out)/.4));el.style.opacity=k;el.style.translate=`0 ${(1-e((t-t0)/.5))*24}px`}
+window.render=function(t){show($("h1"),.2,t,7.2);["f1","f2","f3"].forEach((id,i)=>show($(id),[1.0,3.2,5.3][i],t,7.2));
+ show($("h2"),7.6,t);["s0","s1","s2","s3","s4"].forEach((id,i)=>show($(id),[7.8,9.2,12.3,17.6,20.3][i],t));};
+render(0);
+</script></body></html>
