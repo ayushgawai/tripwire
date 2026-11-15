@@ -97,9 +97,9 @@ export default function PresenterClient() {
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <Link href="/" className="inline-flex h-9 items-center rounded-xl border border-line bg-card px-3.5 text-xs font-semibold">
-                New session
-              </Link>
+              <Button variant="outline" size="sm" onClick={() => void newRun(view.mode, params.token ?? null, params.sessionId, view.state !== "ended")}>
+                New run
+              </Button>
               {view.state !== "ended" && <Button variant="danger" size="sm" onClick={() => void actions.end()}>End session</Button>}
             </div>
           )}
@@ -226,4 +226,21 @@ function FamilyStatus({ view }: { view: ReturnType<typeof useSession>["view"] })
       ))}
     </ol>
   );
+}
+
+
+/** One click: end this session, start a fresh one (same mode) and point the presenter, wearer and
+ * family windows at it. The Vexo band bridge (--follow) attaches to the new session by itself. */
+async function newRun(mode: string, token: string | null, sessionId: string | null, endCurrent: boolean) {
+  const base = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000").replace(/\/$/, "");
+  if (endCurrent && sessionId && token) {
+    await fetch(`${base}/api/sessions/${sessionId}/end`, { method: "POST", headers: { "Content-Type": "application/json", "X-Session-Token": token }, body: "{}" }).catch(() => {});
+  }
+  const r = await fetch(`${base}/api/sessions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: mode || "call", protection_enabled: true }) });
+  const s = (await r.json()) as { session_id: string; tokens: Record<string, string> };
+  const link = (role: string, extra = "") => `/${role}?session=${s.session_id}&token=${s.tokens[role]}${extra}`;
+  window.open(link("wearer", "&captions=off"), "tripwire-wearer");
+  window.open(link("family"), "tripwire-family");
+  const keep = new URLSearchParams(window.location.search).get("voice") === "1" ? "&voice=1" : "";
+  window.location.replace(link("presenter", keep));
 }
