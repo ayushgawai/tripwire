@@ -67,11 +67,16 @@ class Bridge:
             self.audio_q.put_nowait(m.opus)
 
     async def heartbeat(self) -> None:
+        silent = 0
         while True:
             await asyncio.sleep(15)
             state = "link up" if self.band.connected else "LINK DOWN (reconnecting)"
             log(f"heartbeat: {state}, mic {'on' if self.mic_on else 'off'}, {self.packets} audio packets in 15s")
+            silent = silent + 1 if (self.mic_on and self.packets == 0) else 0
             self.packets = 0
+            if silent >= 2:   # mic on but nothing for 30 s: the band reset or went away. Restart and reconnect.
+                log("watchdog: band silent for 30s, reconnecting")
+                os._exit(3)   # supervisor (scripts_run_band.sh) restarts the bridge
 
     async def set_mic(self, on: bool) -> None:
         if on != self.mic_on:
