@@ -35,6 +35,18 @@ export default function PresenterClient() {
     const t = setTimeout(() => runScenario(params.scenario ?? "scam"), 600);
     return () => clearTimeout(t);
   }, [params.replay, params.scenario, autoplay, runScenario]);
+  // ?voice=1: the presenter machine speaks the Tripwire AI out loud (e.g. next to a speakerphone).
+  const voice = useSearchParams().get("voice") === "1";
+  const spoke = view.lastAssistantUtterance;
+  useEffect(() => {
+    if (!voice || !spoke) return;
+    const base = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000").replace(/\/$/, "");
+    if (spoke.audio_url) {
+      void new Audio(`${base}${spoke.audio_url}?token=${encodeURIComponent(params.token ?? "")}`).play().catch(() => {});
+    } else if ("speechSynthesis" in window) {
+      window.speechSynthesis.speak(new SpeechSynthesisUtterance(spoke.text));
+    }
+  }, [voice, spoke?.utterance_id]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!params.sessionId) return <NoSession role="presenter" />;
 
   const ev = evidenceIndex(view);

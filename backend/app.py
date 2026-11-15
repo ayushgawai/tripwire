@@ -320,7 +320,7 @@ async def ingest_utterance(session_id: str, body: dict) -> dict:
     action = decision.get("recommended_action", "")
     did = decision.get("decision_id", "")
 
-    if mode == "call" and risk == "high" and action == "takeover":
+    if mode == "call" and risk == "high" and action in ("takeover", "alert"):  # band-heard (ambient) high risk on a call also takes over
         taken = session.begin_takeover(session_id, decision)
         if taken:
             calls = _load_calls()

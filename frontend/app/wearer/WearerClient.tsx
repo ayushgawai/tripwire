@@ -87,12 +87,13 @@ export default function WearerClient() {
   const wearerConnected = view.wearerReconnected || view.state === "monitoring";
   const ended = view.state === "ended";
 
-  // ---- Live transcription ----
+  // ---- Live transcription ---- (?captions=off when the Vexo band is the microphone)
+  const captionsOn = useSearchParams().get("captions") !== "off";
   const transcription = useLiveTranscription({
     sessionId: params.sessionId,
     token: tokenFromUrl,
     role: "wearer",
-    enabled: !ended && !params.replay,
+    enabled: !ended && !params.replay && captionsOn,
   });
 
   // Pause audio capture when wearer is disconnected (during protection / before reconnect)
@@ -104,9 +105,9 @@ export default function WearerClient() {
   // Wrap onJoin to also start transcription after the user's join gesture
   const handleJoin = useCallback(async (role: Role): Promise<JoinCredentials | null> => {
     const result = await actions.join(role);
-    if (result && wearerConnected) transcription.start();
+    if (result && wearerConnected && captionsOn) transcription.start();
     return result;
-  }, [actions.join, wearerConnected, transcription.start]);
+  }, [actions.join, wearerConnected, captionsOn, transcription.start]);
 
   return (
     <div className={cn("wearer-page min-h-screen transition-colors duration-700", scene.bg)}>
